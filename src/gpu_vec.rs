@@ -124,9 +124,39 @@ impl<T: Copy> GPUVec<T> {
     //     GPUAlloc::new(offset, slice)
     // }
 
+    /// Reserves space for at least `addtional` more elements;
+    pub fn reserve(&mut self, additional: usize) {
+        self.resize(self.capacity() + 1)
+    }
+
     /// untested
     pub fn truncate(&mut self, len: usize) {
         self.set_len(len)
+    }
+
+    pub fn insert(&mut self, index: usize, element: T) {
+        let len = self.len();
+        assert!(index <= len);
+
+        // space for the new element
+        if len == self.capacity() {
+            self.reserve(1);
+        }
+
+        unsafe {
+            // infallible
+            // The spot to put the new value
+            {
+                let p = self.as_mut_ptr().add(index);
+                // Shift everything over to make space. (Duplicating the
+                // `index`th element into two consecutive places.)
+                std::ptr::copy(p, p.offset(1), len - index);
+                // Write it in, overwriting the first copy of the `index`th
+                // element.
+                std::ptr::write(p, element);
+            }
+            self.set_len(len + 1);
+        }
     }
 
     pub fn remove(&mut self, index: usize) -> T {
@@ -173,7 +203,7 @@ impl<T: Copy> GPUVec<T> {
     pub fn push(&mut self, x: &T) {
         // let offset = self.len();
         let len = self.len();
-        self.resize(len + 1);
+        self.reserve(1);
         self[len] = *x;
         self.len += 1;
         // offset
@@ -508,8 +538,17 @@ mod tests {
         let mut vec = GPUVec::from_iter(&dev, &v);
         vec.push(&7);
         assert!(vec.len() == v.len() + 1);
-        assert!(vec[vec.len()-1] == 7);
+        
+        assert!(vec[0] == 0);
+        assert!(vec[1] == 1);
+        assert!(vec[2] == 2);
+        assert!(vec[3] == 3);
+        assert!(vec[4] == 4);
+        assert!(vec[5] == 5);
+        assert!(vec[6] == 6);
+        assert!(vec[7] == 7);
     }
+
 
     #[test]
     fn test_remove() {
