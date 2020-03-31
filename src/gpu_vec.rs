@@ -360,7 +360,29 @@ impl<T: Copy> Clone for GPUVec<T> {
 //     }
 // }
 
+impl<T: Copy> AsRef<metal::Buffer> for GPUVec<T> {
+    #[inline]
+    fn as_ref(&self) -> &metal::Buffer {
+        &self.buffer
+    }
+}
 
+/// untested
+impl<T: Copy + PartialEq> PartialEq for GPUVec<T> {
+    fn eq(&self, other: &Self) -> bool {
+        if self.len() != other.len() {
+            false
+        }
+        else {
+            for i in 0..self.len() {
+                if self[i] != other[i] {
+                    return false;
+                }
+            }
+            true
+        }
+    }
+}
 
 pub struct GPUVecIterator<'a, T: Copy> {
     inner: &'a GPUVec<T>,
@@ -382,23 +404,6 @@ impl<'a, T: Copy> Iterator for GPUVecIterator<'a, T> {
     }
 }
 
-
-/// untested
-impl<T: Copy + PartialEq> PartialEq for GPUVec<T> {
-    fn eq(&self, other: &Self) -> bool {
-        if self.len() != other.len() {
-            false
-        }
-        else {
-            for i in 0..self.len() {
-                if self[i] != other[i] {
-                    return false;
-                }
-            }
-            true
-        }
-    }
-}
 // impl<T> IntoIterator for Vec<T>
 // impl<'a, T> IntoIterator for &'a Vec<T>
 // impl<'a, T> IntoIterator for &'a mut Vec<T>
