@@ -167,6 +167,26 @@ impl<T: Copy> GPUVec<T> {
     pub fn clear(&mut self) {
         self.set_len(0)
     }
+
+    // untested
+    pub fn as_slice(&self) -> &[T] {
+        unsafe {
+            std::slice::from_raw_parts(
+                self.as_ptr(),
+                self.len()
+            )
+        }
+    }
+
+    // untested
+    pub fn as_mut_slice(&self) -> &mut [T] {
+        unsafe {
+            std::slice::from_raw_parts_mut(
+                self.as_mut_ptr(),
+                self.len()
+            )
+        }
+    }
 }
 
 impl<T: Copy> std::ops::Index<usize> for GPUVec<T> {
