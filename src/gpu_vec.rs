@@ -367,6 +367,13 @@ impl<T: Copy> AsRef<metal::Buffer> for GPUVec<T> {
     }
 }
 
+impl<T: Copy> AsMut<metal::Buffer> for GPUVec<T> {
+    #[inline]
+    fn as_mut(&mut self) -> &mut metal::Buffer {
+        &mut self.buffer
+    }
+}
+
 /// untested
 impl<T: Copy + PartialEq> PartialEq for GPUVec<T> {
     fn eq(&self, other: &Self) -> bool {
