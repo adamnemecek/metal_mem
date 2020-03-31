@@ -79,11 +79,11 @@ impl<T: Copy> GPUVec<T> {
         self.buffer.length() as usize
     }
 
-    fn as_ptr(&self) -> *const T {
+    pub fn as_ptr(&self) -> *const T {
         self.buffer.contents() as *const T
     }
 
-    fn as_mut_ptr(&self) -> *mut T {
+    pub fn as_mut_ptr(&self) -> *mut T {
         self.buffer.contents() as *mut T
     }
 
@@ -124,6 +124,11 @@ impl<T: Copy> GPUVec<T> {
     //     GPUAlloc::new(offset, slice)
     // }
 
+    /// untested
+    pub fn truncate(&mut self, len: usize) {
+        self.set_len(len)
+    }
+
     pub fn extend_from_slice(&mut self, v: &[T]) {
         let offset = self.len();
 
@@ -158,6 +163,10 @@ impl<T: Copy> GPUVec<T> {
     pub fn set_len(&mut self, len: usize) {
         // assert!(len < self.len);
         self.len = len;
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
     }
 
     pub fn capacity(&self) -> usize {
@@ -274,6 +283,22 @@ impl<'a, T: Copy> Iterator for GPUVecIterator<'a, T> {
 }
 
 
+/// untested
+impl<T: Copy + PartialEq> PartialEq for GPUVec<T> {
+    fn eq(&self, other: &Self) -> bool {
+        if self.len() != other.len() {
+            false
+        }
+        else {
+            for i in 0..self.len() {
+                if self[i] != other[i] {
+                    return false;
+                }
+            }
+            true
+        }
+    }
+}
 // impl<T> IntoIterator for Vec<T>
 // impl<'a, T> IntoIterator for &'a Vec<T>
 // impl<'a, T> IntoIterator for &'a mut Vec<T>
