@@ -222,6 +222,79 @@ impl<T: Copy> Clone for GPUVec<T> {
 //     }
 // }
 
+
+
+pub struct GPUVecIterator<'a, T: Copy> {
+    inner: &'a GPUVec<T>,
+    pos: usize,
+}
+
+impl<'a, T: Copy> Iterator for GPUVecIterator<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos >= self.inner.len() {
+            None
+        }
+        else {
+            let ret = &self.inner[self.pos];
+            self.pos += 1;
+            Some(ret)
+        }
+    }
+}
+
+
+// impl<T> IntoIterator for Vec<T>
+// impl<'a, T> IntoIterator for &'a Vec<T>
+// impl<'a, T> IntoIterator for &'a mut Vec<T>
+
+
+
+// // impl<T: Copy> GPUVecIterator<T> {
+// //     pub fn new(vec: ) -> Self {
+// //         unsafe {
+// //             GPUVecIterator {
+// //                 ptr: self.as_ptr(),
+// //                 len: self.len(),
+// //                 index: 0,
+// //             }
+// //         }
+// //     }
+// // }
+
+// impl<T: Copy> Iterator for GPUVecIterator<T> {
+//     type Item = &T;
+//     fn next(&mut self) -> Option<Self::Item> {
+//         if self.index < self.len {
+//             unsafe {
+//                 let ptr = self.ptr.offset(self.index as isize);
+//                 self.index += 1;
+//                 ptr
+//             }
+//         }
+//         else {
+//             None
+//         }
+//     }
+// }
+
+// // impl<'a, T: Copy> IntoIterator for GPUVec<'a, T> {
+// //     type Item = T;
+// //     type IntoIter = GPUVecIterator<T>;
+// //     fn into_iter(self) -> Self::IntoIter {
+// //         unsafe {
+// //             GPUVecIterator {
+// //                 ptr: self.as_ptr(),
+// //                 len: self.len(),
+// //                 index: 0,
+// //             }
+// //         }
+// //     }
+// // }
+
+
+
 mod tests {
     use super::*;
 
@@ -347,92 +420,17 @@ mod tests {
         assert!(vec.len() == v.len() + 1);
         assert!(vec[vec.len()-1] == 7);
     }
-}
 
+    #[test]
+    fn test_iter() {
+        let dev = metal::Device::system_default().unwrap();
+        let mut vec: Vec<usize> = vec![0,1,2,3,4,5,6];
+        let gpuvec = GPUVec::from_iter(&dev, &vec);
 
-
-pub struct GPUVecIterator<'a, T: Copy> {
-    inner: &'a GPUVec<T>,
-    pos: usize,
-    // ptr: *const T,
-    // len: usize,
-    // index: usize,
-}
-
-impl<'a, T: Copy> Iterator for GPUVecIterator<'a, T> {
-    type Item = &'a T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.pos >= self.inner.len() {
-            None
-        }
-        else {
-            let ret = &self.inner[self.pos];
-            self.pos += 1;
-            Some(ret)
-        }
+        // let z = gpuvec.iter().
+        let sum = gpuvec.into_iter().fold(0, |a, b| a + b );
+        assert!(sum == 21);
     }
 }
 
-// impl<T> IntoIterator for Vec<T>
-// impl<'a, T> IntoIterator for &'a Vec<T>
-// impl<'a, T> IntoIterator for &'a mut Vec<T>
 
-
-
-// // impl<T: Copy> GPUVecIterator<T> {
-// //     pub fn new(vec: ) -> Self {
-// //         unsafe {
-// //             GPUVecIterator {
-// //                 ptr: self.as_ptr(),
-// //                 len: self.len(),
-// //                 index: 0,
-// //             }
-// //         }
-// //     }
-// // }
-
-// impl<T: Copy> Iterator for GPUVecIterator<T> {
-//     type Item = &T;
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if self.index < self.len {
-//             unsafe {
-//                 let ptr = self.ptr.offset(self.index as isize);
-//                 self.index += 1;
-//                 ptr
-//             }
-//         }
-//         else {
-//             None
-//         }
-//     }
-// }
-
-// // impl<'a, T: Copy> IntoIterator for GPUVec<'a, T> {
-// //     type Item = T;
-// //     type IntoIter = GPUVecIterator<T>;
-// //     fn into_iter(self) -> Self::IntoIter {
-// //         unsafe {
-// //             GPUVecIterator {
-// //                 ptr: self.as_ptr(),
-// //                 len: self.len(),
-// //                 index: 0,
-// //             }
-// //         }
-// //     }
-// // }
-
-
-// mod tests {
-
-//     #[test]
-//     fn test_iter() {
-//         let dev = metal::Device::system_default().unwrap();
-//         let mut vec: Vec<usize> = vec![0,1,2,3,4,5,6];
-//         let gpuvec = GPUVec::from_iter(&dev, &vec);
-
-//         // let z = gpuvec.iter().
-//         let sum = gpuvec.into_iter().fold(0, |a, b| a + b );
-//         assert!(sum == 21);
-//     }
-// }
