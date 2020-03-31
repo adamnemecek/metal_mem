@@ -45,6 +45,13 @@ impl<T: Copy> AsRef<metal::Buffer> for GPUVar<T> {
     }
 }
 
+impl<T: Copy> AsMut<metal::Buffer> for GPUVar<T> {
+    #[inline]
+    fn as_mut(&mut self) -> &mut metal::Buffer {
+        &mut self.buffer
+    }
+}
+
 
 mod tests {
     use crate::GPUVar;
