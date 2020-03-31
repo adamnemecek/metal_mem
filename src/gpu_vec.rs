@@ -16,23 +16,23 @@ use crate::{
 };
 
 
-pub struct GPUVec<'a, T: Copy> {
-    device: &'a metal::DeviceRef,
+pub struct GPUVec<T: Copy> {
+    device: metal::Device,
     pub buffer: metal::Buffer,
     len: usize,
     capacity: usize,
     phantom: std::marker::PhantomData<T>
 }
 
-impl<'a, T: Copy> GPUVec<'a, T> {
-    pub fn new(device: &'a metal::DeviceRef, capacity: usize) -> Self {
+impl<T: Copy> GPUVec<T> {
+    pub fn new(device: &metal::DeviceRef, capacity: usize) -> Self {
         let byte_capacity = page_aligned(capacity * Self::element_size()) as u64;
         let buffer = device.new_buffer(
             byte_capacity,
             metal::MTLResourceOptions::CPUCacheModeDefaultCache
         );
         Self {
-            device,
+            device: device.to_owned(),
             buffer,
             len: 0,
             capacity,
@@ -51,7 +51,7 @@ impl<'a, T: Copy> GPUVec<'a, T> {
     //     // }
     // }
 
-    pub fn from_iter(device: &'a metal::DeviceRef, data: &[T]) -> Self {
+    pub fn from_iter(device: &metal::DeviceRef, data: &[T]) -> Self {
         let mut ret = Self::new(device, data.len());
         let len = data.len();
 
@@ -167,7 +167,7 @@ impl<'a, T: Copy> GPUVec<'a, T> {
     }
 }
 
-impl<'a, T: Copy> std::ops::Index<usize> for GPUVec<'a, T> {
+impl<T: Copy> std::ops::Index<usize> for GPUVec<T> {
     type Output = T;
     fn index(&self, index: usize) -> &Self::Output {
         unsafe {
@@ -176,7 +176,7 @@ impl<'a, T: Copy> std::ops::Index<usize> for GPUVec<'a, T> {
     }
 }
 
-impl<'a, T: Copy> std::ops::IndexMut<usize> for GPUVec<'a, T> {
+impl<T: Copy> std::ops::IndexMut<usize> for GPUVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         unsafe {
             self.as_mut_ptr().offset(index as isize).as_mut().unwrap()
@@ -184,20 +184,20 @@ impl<'a, T: Copy> std::ops::IndexMut<usize> for GPUVec<'a, T> {
     }
 }
 
-impl<'a, T: Copy> Extend<T> for GPUVec<'a, T> {
+impl<T: Copy> Extend<T> for GPUVec<T> {
     fn extend<I: IntoIterator<Item=T>>(&mut self, iter: I) {
         let v: Vec<T> = iter.into_iter().collect();
         self.extend_from_slice(&v);
     }
 }
 
-impl<'a, T: Copy> Into<metal::Buffer> for GPUVec<'a, T> {
+impl<T: Copy> Into<metal::Buffer> for GPUVec<T> {
     fn into(self) -> metal::Buffer {
         self.buffer
     }
 }
 
-impl<'a, T: Copy> Clone for GPUVec<'a, T> {
+impl<T: Copy> Clone for GPUVec<T> {
     fn clone(&self) -> Self {
         todo!()
     }
@@ -219,70 +219,6 @@ impl<'a, T: Copy> Clone for GPUVec<'a, T> {
 //             //     index: 0,
 //             // }
 //         // }
-//     }
-// }
-
-
-// pub struct GPUVecIterator<T: Copy> {
-//     ptr: *const T,
-//     len: usize,
-//     index: usize,
-// }
-
-// // impl<T: Copy> GPUVecIterator<T> {
-// //     pub fn new(vec: ) -> Self {
-// //         unsafe {
-// //             GPUVecIterator {
-// //                 ptr: self.as_ptr(),
-// //                 len: self.len(),
-// //                 index: 0,
-// //             }
-// //         }
-// //     }
-// // }
-
-// impl<T: Copy> Iterator for GPUVecIterator<T> {
-//     type Item = &T;
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if self.index < self.len {
-//             unsafe {
-//                 let ptr = self.ptr.offset(self.index as isize);
-//                 self.index += 1;
-//                 ptr
-//             }
-//         }
-//         else {
-//             None
-//         }
-//     }
-// }
-
-// // impl<'a, T: Copy> IntoIterator for GPUVec<'a, T> {
-// //     type Item = T;
-// //     type IntoIter = GPUVecIterator<T>;
-// //     fn into_iter(self) -> Self::IntoIter {
-// //         unsafe {
-// //             GPUVecIterator {
-// //                 ptr: self.as_ptr(),
-// //                 len: self.len(),
-// //                 index: 0,
-// //             }
-// //         }
-// //     }
-// // }
-
-
-// mod tests {
-
-//     #[test]
-//     fn test_iter() {
-//         let dev = metal::Device::system_default().unwrap();
-//         let mut vec: Vec<usize> = vec![0,1,2,3,4,5,6];
-//         let gpuvec = GPUVec::from_iter(&dev, &vec);
-
-//         // let z = gpuvec.iter().
-//         let sum = gpuvec.into_iter().fold(0, |a, b| a + b );
-//         assert!(sum == 21);
 //     }
 // }
 
@@ -412,3 +348,67 @@ mod tests {
         assert!(vec[vec.len()-1] == 7);
     }
 }
+
+
+// pub struct GPUVecIterator<T: Copy> {
+//     ptr: *const T,
+//     len: usize,
+//     index: usize,
+// }
+
+// // impl<T: Copy> GPUVecIterator<T> {
+// //     pub fn new(vec: ) -> Self {
+// //         unsafe {
+// //             GPUVecIterator {
+// //                 ptr: self.as_ptr(),
+// //                 len: self.len(),
+// //                 index: 0,
+// //             }
+// //         }
+// //     }
+// // }
+
+// impl<T: Copy> Iterator for GPUVecIterator<T> {
+//     type Item = &T;
+//     fn next(&mut self) -> Option<Self::Item> {
+//         if self.index < self.len {
+//             unsafe {
+//                 let ptr = self.ptr.offset(self.index as isize);
+//                 self.index += 1;
+//                 ptr
+//             }
+//         }
+//         else {
+//             None
+//         }
+//     }
+// }
+
+// // impl<'a, T: Copy> IntoIterator for GPUVec<'a, T> {
+// //     type Item = T;
+// //     type IntoIter = GPUVecIterator<T>;
+// //     fn into_iter(self) -> Self::IntoIter {
+// //         unsafe {
+// //             GPUVecIterator {
+// //                 ptr: self.as_ptr(),
+// //                 len: self.len(),
+// //                 index: 0,
+// //             }
+// //         }
+// //     }
+// // }
+
+
+// mod tests {
+
+//     #[test]
+//     fn test_iter() {
+//         let dev = metal::Device::system_default().unwrap();
+//         let mut vec: Vec<usize> = vec![0,1,2,3,4,5,6];
+//         let gpuvec = GPUVec::from_iter(&dev, &vec);
+
+//         // let z = gpuvec.iter().
+//         let sum = gpuvec.into_iter().fold(0, |a, b| a + b );
+//         assert!(sum == 21);
+//     }
+// }
