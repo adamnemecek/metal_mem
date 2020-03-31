@@ -198,13 +198,29 @@ impl<T: Copy> GPUVec<T> {
         self.len = new_len;
     }
 
-    pub fn push(&mut self, x: &T) {
-        // let offset = self.len();
-        let len = self.len();
-        self.reserve(1);
-        self[len] = *x;
-        self.len += 1;
-        // offset
+    /// Appends an element to the back of a collection.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the number of elements in the vector overflows a `usize`.
+    ///
+    /// # Examples
+    ///
+    ///
+    /// //let mut vec = vec![1, 2];
+    /// //vec.push(3);
+    /// //assert_eq!(vec, [1, 2, 3]);
+    ///
+    #[inline]
+    pub fn push(&mut self, value: T) {
+        if self.len == self.capacity() {
+            self.reserve(1);
+        }
+        unsafe {
+            let end = self.as_mut_ptr().add(self.len);
+            std::ptr::write(end, value);
+            self.len += 1;
+        }
     }
 
     // in elements, not bytes.
@@ -265,7 +281,7 @@ impl<T: Copy> GPUVec<T> {
 impl<T: Copy> std::ops::Index<usize> for GPUVec<T> {
     type Output = T;
     fn index(&self, index: usize) -> &Self::Output {
-        assert!(index <= self.len());
+        assert!(index < self.len());
         unsafe {
             self.as_ptr().offset(index as isize).as_ref().unwrap()
         }
@@ -274,7 +290,7 @@ impl<T: Copy> std::ops::Index<usize> for GPUVec<T> {
 
 impl<T: Copy> std::ops::IndexMut<usize> for GPUVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        assert!(index <= self.len());
+        assert!(index < self.len());
         unsafe {
             self.as_mut_ptr().offset(index as isize).as_mut().unwrap()
         }
@@ -535,10 +551,14 @@ mod tests {
     fn test_push() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
+
         let mut vec = GPUVec::from_iter(&dev, &v);
-        vec.push(&7);
-        assert!(vec.len() == v.len() + 1);
-        
+        vec.push(7);
+
+        assert!(v.len() == 7);
+        assert!(vec.len() == 8);
+        // assert!(vec.len() == v.len() + 1);
+
         assert!(vec[0] == 0);
         assert!(vec[1] == 1);
         assert!(vec[2] == 2);
