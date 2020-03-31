@@ -9,8 +9,6 @@
 ///
 
 use crate::{
-    // GPUAlloc,
-    // ViewSize,
     round_up,
     page_aligned,
 };
@@ -267,6 +265,7 @@ impl<T: Copy> GPUVec<T> {
 impl<T: Copy> std::ops::Index<usize> for GPUVec<T> {
     type Output = T;
     fn index(&self, index: usize) -> &Self::Output {
+        assert!(index <= self.len());
         unsafe {
             self.as_ptr().offset(index as isize).as_ref().unwrap()
         }
@@ -275,6 +274,7 @@ impl<T: Copy> std::ops::Index<usize> for GPUVec<T> {
 
 impl<T: Copy> std::ops::IndexMut<usize> for GPUVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        assert!(index <= self.len());
         unsafe {
             self.as_mut_ptr().offset(index as isize).as_mut().unwrap()
         }
@@ -549,6 +549,40 @@ mod tests {
         assert!(vec[7] == 7);
     }
 
+    #[test]
+    fn test_insert() {
+        let dev = metal::Device::system_default().unwrap();
+        let v: Vec<usize> = vec![0,1,2,4,5,6];
+        let mut vec = GPUVec::from_iter(&dev, &v);
+        vec.insert(3, 3);
+
+        assert!(vec[0] == 0);
+        assert!(vec[1] == 1);
+        assert!(vec[2] == 2);
+        assert!(vec[3] == 3);
+        assert!(vec[4] == 4);
+        assert!(vec[5] == 5);
+        assert!(vec[6] == 6);
+    }
+
+    #[test]
+    fn test_truncate() {
+        let dev = metal::Device::system_default().unwrap();
+        let v: Vec<usize> = vec![0,1,2,3,4,5,6];
+        let mut vec = GPUVec::from_iter(&dev, &v);
+        vec.truncate(3);
+
+        assert!(vec.len() == 3);
+
+        assert!(vec[0] == 0);
+        assert!(vec[1] == 1);
+        assert!(vec[2] == 2);
+        // assert!(vec[3] == 3);
+        // assert!(vec[3] == 3);
+        // assert!(vec[4] == 4);
+        // assert!(vec[5] == 5);
+        // assert!(vec[6] == 6);
+    }
 
     #[test]
     fn test_remove() {
