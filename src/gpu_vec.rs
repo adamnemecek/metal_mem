@@ -129,6 +129,30 @@ impl<T: Copy> GPUVec<T> {
         self.set_len(len)
     }
 
+    pub fn remove(&mut self, index: usize) -> T {
+        ///
+        /// Implementation based on Rust's Vec::remove
+        ///
+        let len = self.len();
+        assert!(index < len);
+        unsafe {
+            // infallible
+            let ret;
+            {
+                // the place we are taking from.
+                let ptr = self.as_mut_ptr().add(index);
+                // copy it out, unsafely having a copy of the value on
+                // the stack and in the vector at the same time.
+                ret = std::ptr::read(ptr);
+
+                // Shift everything down to fill in that spot.
+                std::ptr::copy(ptr.offset(1), ptr, len - index - 1);
+            }
+            self.set_len(len - 1);
+            ret
+        }
+    }
+
     pub fn extend_from_slice(&mut self, v: &[T]) {
         let offset = self.len();
 
@@ -160,10 +184,22 @@ impl<T: Copy> GPUVec<T> {
         self.len
     }
 
-    pub fn set_len(&mut self, len: usize) {
-        // assert!(len < self.len);
-        self.len = len;
+    pub fn set_len(&mut self, new_len: usize) {
+        debug_assert!(new_len <= self.capacity());
+        self.len = new_len;
     }
+
+    // pub fn swap_remove(&mut self, index: usize) -> T {
+    //     unsafe {
+    //         // We replace self[index] with the last element. Note that if the
+    //         // bounds check on hole succeeds there must be a last element (which
+    //         // can be self[index] itself).
+    //         let hole: *mut T = &mut self[index];
+    //         let last = std::ptr::read(self.get_unchecked(self.len - 1));
+    //         self.len -= 1;
+    //         ptr::replace(hole, last)
+    //     }
+    // }
 
     pub fn is_empty(&self) -> bool {
         self.len == 0
@@ -473,6 +509,21 @@ mod tests {
         vec.push(&7);
         assert!(vec.len() == v.len() + 1);
         assert!(vec[vec.len()-1] == 7);
+    }
+
+    #[test]
+    fn test_remove() {
+        let dev = metal::Device::system_default().unwrap();
+        let v: Vec<usize> = vec![0,1,2,3,4,5,6];
+        let mut vec = GPUVec::from_iter(&dev, &v);
+        vec.remove(3);
+
+        assert!(vec[0] == 0);
+        assert!(vec[1] == 1);
+        assert!(vec[2] == 2);
+        assert!(vec[3] == 4);
+        assert!(vec[4] == 5);
+        assert!(vec[5] == 6);
     }
 
     // #[test]
