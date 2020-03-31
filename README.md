@@ -1,4 +1,4 @@
-# metal_mem
+# metalgear
 
 * GPUVec and GPUVar
 
