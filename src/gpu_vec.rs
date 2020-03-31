@@ -77,10 +77,12 @@ impl<T: Copy> GPUVec<T> {
         self.buffer.length() as usize
     }
 
+    #[inline]
     pub fn as_ptr(&self) -> *const T {
         self.buffer.contents() as *const T
     }
 
+    #[inline]
     pub fn as_mut_ptr(&self) -> *mut T {
         self.buffer.contents() as *mut T
     }
@@ -223,7 +225,20 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
+    // #[inline]
+    // pub fn pop(&mut self) -> Option<T> {
+    //     if self.len == 0 {
+    //         None
+    //     } else {
+    //         unsafe {
+    //             self.len -= 1;
+    //             Some(std::ptr::read(self.get_unchecked(self.len())))
+    //         }
+    //     }
+    // }
+
     // in elements, not bytes.
+    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
@@ -245,14 +260,17 @@ impl<T: Copy> GPUVec<T> {
     //     }
     // }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
 
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.capacity
     }
 
+    #[inline]
     pub fn clear(&mut self) {
         self.set_len(0)
     }
