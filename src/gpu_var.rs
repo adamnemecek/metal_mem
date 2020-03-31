@@ -10,7 +10,7 @@ pub struct GPUVar<T: Copy> {
 
 impl<T: Copy> GPUVar<T> {
     pub fn new(device: &metal::DeviceRef, value: T) -> Self {
-        let byte_capacity = page_aligned(std::mem::size_of::<T>()) as u64;
+        let byte_capacity = page_aligned(Self::element_size()) as u64;
         let buffer = device.new_buffer(byte_capacity, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         let mut ret = Self {
             device: device.to_owned(),
@@ -20,6 +20,11 @@ impl<T: Copy> GPUVar<T> {
         ret.set_value(value);
         ret
     }
+
+    fn element_size() -> usize {
+        std::mem::size_of::<T>()
+    }
+
 
     pub fn value(&self) -> T {
         unsafe {
@@ -32,7 +37,7 @@ impl<T: Copy> GPUVar<T> {
             std::ptr::copy(
                 &value,
                 self.buffer.contents() as *mut T,
-                std::mem::size_of::<T>()
+                Self::element_size()
             );
         }
     }
