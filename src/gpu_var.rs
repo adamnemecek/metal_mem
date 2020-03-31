@@ -25,7 +25,6 @@ impl<T: Copy> GPUVar<T> {
         std::mem::size_of::<T>()
     }
 
-
     pub fn value(&self) -> T {
         unsafe {
             *(self.buffer.contents() as *const T)

@@ -50,8 +50,8 @@ impl<T: Copy> GPUVec<T> {
     // }
 
     pub fn from_iter(device: &metal::DeviceRef, data: &[T]) -> Self {
-        let mut ret = Self::new(device, data.len());
         let len = data.len();
+        let mut ret = Self::new(device, len);
 
         unsafe {
             std::ptr::copy(
@@ -65,14 +65,17 @@ impl<T: Copy> GPUVec<T> {
         ret
     }
 
+    #[inline]
     fn element_size() -> usize {
         std::mem::size_of::<T>()
     }
 
+    #[inline]
     pub fn byte_len(&self) -> usize {
         Self::element_size() * self.len()
     }
 
+    #[inline]
     pub fn byte_capacity(&self) -> usize {
         self.buffer.length() as usize
     }
