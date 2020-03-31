@@ -350,6 +350,7 @@ mod tests {
 }
 
 
+
 pub struct GPUVecIterator<'a, T: Copy> {
     inner: &'a GPUVec<T>,
     pos: usize,
@@ -372,6 +373,12 @@ impl<'a, T: Copy> Iterator for GPUVecIterator<'a, T> {
         }
     }
 }
+
+// impl<T> IntoIterator for Vec<T>
+// impl<'a, T> IntoIterator for &'a Vec<T>
+// impl<'a, T> IntoIterator for &'a mut Vec<T>
+
+
 
 // // impl<T: Copy> GPUVecIterator<T> {
 // //     pub fn new(vec: ) -> Self {
