@@ -38,6 +38,14 @@ impl<T: Copy> GPUVar<T> {
     }
 }
 
+impl<T: Copy> AsRef<metal::Buffer> for GPUVar<T> {
+    #[inline]
+    fn as_ref(&self) -> &metal::Buffer {
+        &self.buffer
+    }
+}
+
+
 mod tests {
     use crate::GPUVar;
     #[test]
