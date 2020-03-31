@@ -149,12 +149,14 @@ impl<T: Copy> GPUVec<T> {
         self.len += 1;
         // offset
     }
+
     // in elements, not bytes.
     pub fn len(&self) -> usize {
         self.len
     }
 
     pub fn set_len(&mut self, len: usize) {
+        // assert!(len < self.len);
         self.len = len;
     }
 
@@ -196,6 +198,13 @@ impl<T: Copy> Into<metal::Buffer> for GPUVec<T> {
         self.buffer
     }
 }
+
+// impl<'a, T: Copy> Into<&'a metal::BufferRef> for GPUVec<T> {
+//     fn into(self) -> &'a metal::BufferRef {
+//         self.buffer.as_ref()
+//         // todo!()
+//     }
+// }
 
 impl<T: Copy> Clone for GPUVec<T> {
     fn clone(&self) -> Self {
@@ -421,16 +430,16 @@ mod tests {
         assert!(vec[vec.len()-1] == 7);
     }
 
-    #[test]
-    fn test_iter() {
-        let dev = metal::Device::system_default().unwrap();
-        let mut vec: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let gpuvec = GPUVec::from_iter(&dev, &vec);
+    // #[test]
+    // fn test_iter() {
+    //     let dev = metal::Device::system_default().unwrap();
+    //     let mut vec: Vec<usize> = vec![0,1,2,3,4,5,6];
+    //     let gpuvec = GPUVec::from_iter(&dev, &vec);
 
-        // let z = gpuvec.iter().
-        let sum = gpuvec.into_iter().fold(0, |a, b| a + b );
-        assert!(sum == 21);
-    }
+    //     // let z = gpuvec.iter().
+    //     let sum = gpuvec.into_iter().fold(0, |a, b| a + b );
+    //     assert!(sum == 21);
+    // }
 }
 
 
