@@ -350,11 +350,28 @@ mod tests {
 }
 
 
-// pub struct GPUVecIterator<T: Copy> {
-//     ptr: *const T,
-//     len: usize,
-//     index: usize,
-// }
+pub struct GPUVecIterator<'a, T: Copy> {
+    inner: &'a GPUVec<T>,
+    pos: usize,
+    // ptr: *const T,
+    // len: usize,
+    // index: usize,
+}
+
+impl<'a, T: Copy> Iterator for GPUVecIterator<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos >= self.inner.len() {
+            None
+        }
+        else {
+            let ret = &self.inner[self.pos];
+            self.pos += 1;
+            Some(ret)
+        }
+    }
+}
 
 // // impl<T: Copy> GPUVecIterator<T> {
 // //     pub fn new(vec: ) -> Self {

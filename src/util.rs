@@ -37,7 +37,7 @@
 //     }
 // }
 
-pub fn round_up(x: usize, to: usize) -> usize {
+pub(crate) fn round_up(x: usize, to: usize) -> usize {
     let m = x % to;
     if m == 0 {
         x
@@ -47,6 +47,6 @@ pub fn round_up(x: usize, to: usize) -> usize {
     }
 }
 
-pub fn page_aligned(size: usize) -> usize {
+pub(crate) fn page_aligned(size: usize) -> usize {
     round_up(size, 4096)
 }
