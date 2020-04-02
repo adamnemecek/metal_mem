@@ -431,19 +431,19 @@ impl<T: Copy + PartialEq> PartialEq for GPUVec<T> {
 
 pub struct Iter<'a, T: Copy> {
     inner: &'a GPUVec<T>,
-    pos: usize,
+    idx: usize,
 }
 
 impl<'a, T: Copy> Iterator for Iter<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.pos >= self.inner.len() {
+        if self.idx >= self.inner.len() {
             None
         }
         else {
-            let ret = &self.inner[self.pos];
-            self.pos += 1;
+            let ret = &self.inner[self.idx];
+            self.idx += 1;
             Some(ret)
         }
     }
@@ -500,8 +500,8 @@ impl<'a, T: Copy> std::iter::FusedIterator for Iter<'a, T> {}
 
 // #[derive(Debug)]
 pub struct IterMut<'a, T: Copy> {
-    len: usize,
-    inner: &'a GPUVec<T>
+    idx: usize,
+    inner: &'a mut GPUVec<T>
 }
 
 impl<'a, T: Copy> Iterator for IterMut<'a, T> {
@@ -509,13 +509,14 @@ impl<'a, T: Copy> Iterator for IterMut<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         todo!()
-        // if self.pos >= self.inner.len() {
+        // if self.idx >= self.inner.len() {
         //     None
         // }
         // else {
-        //     let ret = &self.inner[self.pos];
-        //     self.pos += 1;
-        //     Some(ret)
+        //     // let mut ret = &mut self.inner[self.idx];
+        //     // self.idx += 1;
+        //     // Some(ret)
+        //     Some(&mut self.inner[self.idx])
         // }
     }
 
