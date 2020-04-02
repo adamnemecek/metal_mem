@@ -238,6 +238,28 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&T) -> bool,
+    {
+        let len = self.len();
+        let mut del = 0;
+        {
+            let v = &mut **self;
+
+            for i in 0..len {
+                if !f(&v[i]) {
+                    del += 1;
+                } else if del > 0 {
+                    v.swap(i - del, i);
+                }
+            }
+        }
+        if del > 0 {
+            self.truncate(len - del);
+        }
+    }
+
     // in elements, not bytes.
     #[inline]
     pub fn len(&self) -> usize {
@@ -277,6 +299,7 @@ impl<T: Copy> GPUVec<T> {
     }
 
     // untested
+    #[inline]
     pub fn as_slice(&self) -> &[T] {
         unsafe {
             std::slice::from_raw_parts(
@@ -287,6 +310,7 @@ impl<T: Copy> GPUVec<T> {
     }
 
     // untested
+    #[inline]
     pub fn as_mut_slice(&self) -> &mut [T] {
         unsafe {
             std::slice::from_raw_parts_mut(
@@ -344,6 +368,24 @@ impl<T: Copy> Extend<T> for GPUVec<T> {
 impl<T: Copy> Into<metal::Buffer> for GPUVec<T> {
     fn into(self) -> metal::Buffer {
         self.buffer
+    }
+}
+
+
+impl<T: Copy> std::ops::Deref for GPUVec<T> {
+    type Target = [T];
+
+    #[inline]
+    fn deref(&self) -> &[T] {
+        self.as_slice()
+    }
+}
+
+// #[stable(feature = "rust1", since = "1.0.0")]
+impl<T: Copy> std::ops::DerefMut for GPUVec<T> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut [T] {
+        self.as_mut_slice()
     }
 }
 
@@ -782,6 +824,20 @@ mod tests {
     //     let sum = gpuvec.into_iter().fold(0, |a, b| a + b );
     //     assert!(sum == 21);
     // }
+
+    #[test]
+    fn test_retain() {
+        let dev = metal::Device::system_default().unwrap();
+        let v: Vec<usize> = vec![0,1,2,3,4,5,6];
+        let mut vec = GPUVec::from_iter(&dev, &v);
+        vec.retain(|x| x % 2 == 0);
+        assert!(vec.len() == 4);
+
+        assert!(vec[0] == 0);
+        assert!(vec[1] == 2);
+        assert!(vec[2] == 4);
+        assert!(vec[3] == 6);
+    }
 }
 
 
