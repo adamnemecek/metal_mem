@@ -13,6 +13,11 @@ use crate::{
     page_aligned,
 };
 
+use std::hash::{
+    Hash,
+    Hasher
+};
+
 
 pub struct GPUVec<T: Copy> {
     device: metal::Device,
@@ -77,7 +82,7 @@ impl<T: Copy> GPUVec<T> {
 
     #[inline]
     pub fn byte_capacity(&self) -> usize {
-        self.buffer.length() as usize
+        Self::element_size() * self.capacity()
     }
 
     #[inline]
@@ -468,6 +473,13 @@ impl<T: Copy + PartialEq> PartialEq for GPUVec<T> {
             }
             true
         }
+    }
+}
+
+impl<T: Hash + Copy> Hash for GPUVec<T> {
+    #[inline]
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Hash::hash(&**self, state)
     }
 }
 
