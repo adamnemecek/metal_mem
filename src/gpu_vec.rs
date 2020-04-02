@@ -189,7 +189,7 @@ impl<T: Copy> GPUVec<T> {
     pub fn extend_from_slice(&mut self, v: &[T]) {
         let offset = self.len();
 
-        let new_len = self.len() + v.len();
+        let new_len = self.len() + v.len(); 
 
         self.resize(new_len);
 
@@ -451,7 +451,7 @@ impl<'a, T: Copy> Iterator for Iter<'a, T> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let l = self.len();
+        let l = self.inner.len();
         (l, Some(l))
     }
 }
@@ -488,19 +488,19 @@ impl<'a, T: Copy> ExactSizeIterator for Iter<'a, T> {
     }
 }
 
-impl<T: Copy + std::fmt::Debug> std::fmt::Debug for GPUVec<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for e in self.iter() {
-            // write!(f, "{}", e)
-        }
-        Ok(())
-    }
-}
+// impl<T: Copy + std::fmt::Debug> std::fmt::Debug for GPUVec<T> {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         for e in self.iter() {
+//             // write!(f, "{}", e)
+//         }
+//         Ok(())
+//     }
+// }
 
 // use core::iter::{self, Extend, FromIterator, FusedIterator};
 impl<'a, T: Copy> std::iter::FusedIterator for Iter<'a, T> {}
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct IterMut<'a, T: Copy> {
     len: usize,
     inner: &'a GPUVec<T>
@@ -522,7 +522,8 @@ impl<'a, T: Copy> Iterator for IterMut<'a, T> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        todo!()
+        let l = self.inner.len();
+        (l, Some(l))
     }
 }
 
@@ -530,8 +531,7 @@ impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
     type Item = &'a mut T;
     type IntoIter = IterMut<'a, T>;
     fn into_iter(self) -> Self::IntoIter {
-        // self.iter_mut()
-        todo!()
+        self.iter_mut()
     }
 }
 
