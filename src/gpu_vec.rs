@@ -16,7 +16,7 @@ use crate::{
 
 pub struct GPUVec<T: Copy> {
     device: metal::Device,
-    pub buffer: metal::Buffer,
+    buffer: metal::Buffer,
     len: usize,
     capacity: usize,
     phantom: std::marker::PhantomData<T>
@@ -297,6 +297,24 @@ impl<T: Copy> GPUVec<T> {
             )
         }
     }
+
+    pub fn iter(&self) -> Iter<T> {
+        todo!()
+        // Iter {
+        //     len: self.len,
+        //     inner: self.items.iter().enumerate(),
+        // }
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        todo!()
+        // IterMut {
+        //     len: self.len,
+        //     inner: self.items.iter_mut().enumerate(),
+        // }
+    }
+
+
 }
 
 impl<T: Copy> std::ops::Index<usize> for GPUVec<T> {
@@ -394,12 +412,12 @@ impl<T: Copy + PartialEq> PartialEq for GPUVec<T> {
     }
 }
 
-pub struct GPUVecIterator<'a, T: Copy> {
+pub struct Iter<'a, T: Copy> {
     inner: &'a GPUVec<T>,
     pos: usize,
 }
 
-impl<'a, T: Copy> Iterator for GPUVecIterator<'a, T> {
+impl<'a, T: Copy> Iterator for Iter<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -411,6 +429,91 @@ impl<'a, T: Copy> Iterator for GPUVecIterator<'a, T> {
             self.pos += 1;
             Some(ret)
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        todo!()
+    }
+}
+
+impl<'a, T: Copy> DoubleEndedIterator for Iter<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        todo!()
+        // loop {
+        //     match self.inner.next_back() {
+        //         Some((_, &Entry::Free { .. })) => continue,
+        //         Some((
+        //             index,
+        //             &Entry::Occupied {
+        //                 generation,
+        //                 ref value,
+        //             },
+        //         )) => {
+        //             self.len -= 1;
+        //             let idx = Index { index, generation };
+        //             return Some((idx, value));
+        //         }
+        //         None => {
+        //             debug_assert_eq!(self.len, 0);
+        //             return None;
+        //         }
+        //     }
+        // }
+    }
+}
+
+impl<'a, T: Copy> ExactSizeIterator for Iter<'a, T> {
+    fn len(&self) -> usize {
+        // self.len
+        todo!()
+    }
+}
+
+impl<T: Copy> std::fmt::Debug for GPUVec<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
+        // f.debug_struct("Point")
+        //  .field("x", &self.x)
+        //  .field("y", &self.y)
+        //  .finish()
+    }
+}
+
+// use core::iter::{self, Extend, FromIterator, FusedIterator};
+impl<'a, T: Copy> std::iter::FusedIterator for Iter<'a, T> {}
+
+#[derive(Debug)]
+pub struct IterMut<'a, T: Copy> {
+    len: usize,
+    inner: &'a GPUVec<T>
+}
+
+impl<'a, T: Copy> Iterator for IterMut<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+        // if self.pos >= self.inner.len() {
+        //     None
+        // }
+        // else {
+        //     let ret = &self.inner[self.pos];
+        //     self.pos += 1;
+        //     Some(ret)
+        // }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        todo!()
+    }
+}
+
+impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
+    type Item = (&'a T);
+    type IntoIter = IterMut<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        // self.iter_mut()
+        todo!()
     }
 }
 
