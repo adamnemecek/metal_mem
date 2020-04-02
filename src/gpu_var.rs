@@ -21,7 +21,7 @@ impl<T: Copy> GPUVar<T> {
         ret
     }
 
-    fn element_size() -> usize {
+    pub fn element_size() -> usize {
         std::mem::size_of::<T>()
     }
 

@@ -228,17 +228,15 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
-    // #[inline]
-    // pub fn pop(&mut self) -> Option<T> {
-    //     if self.len == 0 {
-    //         None
-    //     } else {
-    //         unsafe {
-    //             self.len -= 1;
-    //             Some(std::ptr::read(self.get_unchecked(self.len())))
-    //         }
-    //     }
-    // }
+    pub fn pop(&mut self) -> Option<T> {
+        if self.len == 0 {
+            None
+        } else {
+            let last = self[self.len()];
+            self.len -= 1;
+            Some(last)
+        }
+    }
 
     // in elements, not bytes.
     #[inline]
