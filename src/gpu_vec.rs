@@ -358,7 +358,26 @@ impl<T: Copy> Into<metal::Buffer> for GPUVec<T> {
 
 impl<T: Copy> Clone for GPUVec<T> {
     fn clone(&self) -> Self {
-        todo!()
+        let byte_capacity = self.byte_capacity();
+        let buffer = self.device.new_buffer(
+            byte_capacity as u64,
+            metal::MTLResourceOptions::CPUCacheModeDefaultCache
+        );
+
+        unsafe {
+            std::ptr::copy(
+                self.as_ptr(),
+                buffer.contents() as *mut T,
+                self.len()
+            );
+        }
+        Self {
+            device: self.device.to_owned(),
+            buffer,
+            len: 0,
+            capacity: self.capacity(),
+            phantom: std::marker::PhantomData
+        }
     }
 }
 
@@ -471,6 +490,9 @@ impl<'a, T: Copy> ExactSizeIterator for Iter<'a, T> {
 
 impl<T: Copy> std::fmt::Debug for GPUVec<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for e in self.iter() {
+
+        }
         todo!()
         // f.debug_struct("Point")
         //  .field("x", &self.x)
@@ -509,7 +531,7 @@ impl<'a, T: Copy> Iterator for IterMut<'a, T> {
 }
 
 impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
-    type Item = (&'a T);
+    type Item = &'a T;
     type IntoIter = IterMut<'a, T>;
     fn into_iter(self) -> Self::IntoIter {
         // self.iter_mut()
