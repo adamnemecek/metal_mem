@@ -138,6 +138,7 @@ impl<T: Copy> GPUVec<T> {
     }
 
     /// untested
+    #[inline]
     pub fn truncate(&mut self, len: usize) {
         self.set_len(len)
     }
@@ -271,6 +272,7 @@ impl<T: Copy> GPUVec<T> {
         self.len
     }
 
+    #[inline]
     pub fn set_len(&mut self, new_len: usize) {
         debug_assert!(new_len <= self.capacity());
         self.len = new_len;
@@ -344,6 +346,28 @@ impl<T: Copy> GPUVec<T> {
 
 }
 
+impl<T : Copy> GPUVec<T> {
+    /// Removes the first instance of `item` from the vector if the item exists.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #![feature(vec_remove_item)]
+    /// let mut vec = vec![1, 2, 3, 1];
+    ///
+    /// vec.remove_item(&1);
+    ///
+    /// assert_eq!(vec, vec![2, 3, 1]);
+    /// ```
+    pub fn remove_item<V>(&mut self, item: &V) -> Option<T>
+    where
+        T: PartialEq<V>,
+    {
+        let pos = self.iter().position(|x| *x == *item)?;
+        Some(self.remove(pos))
+    }
+}
+
 impl<T: Copy> std::ops::Index<usize> for GPUVec<T> {
     type Output = T;
     fn index(&self, index: usize) -> &Self::Output {
@@ -376,7 +400,6 @@ impl<T: Copy> Into<metal::Buffer> for GPUVec<T> {
     }
 }
 
-
 impl<T: Copy> std::ops::Deref for GPUVec<T> {
     type Target = [T];
 
@@ -386,7 +409,6 @@ impl<T: Copy> std::ops::Deref for GPUVec<T> {
     }
 }
 
-// #[stable(feature = "rust1", since = "1.0.0")]
 impl<T: Copy> std::ops::DerefMut for GPUVec<T> {
     #[inline]
     fn deref_mut(&mut self) -> &mut [T] {
