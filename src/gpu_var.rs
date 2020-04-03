@@ -21,21 +21,34 @@ impl<T: Copy> GPUVar<T> {
         ret
     }
 
+    #[inline]
     pub fn element_size() -> usize {
         std::mem::size_of::<T>()
     }
 
+    #[inline]
+    pub fn as_ptr(&self) -> *const T {
+        self.buffer.contents() as *const T
+    }
+
+    #[inline]
+    pub fn as_mut_ptr(&self) -> *mut T {
+        self.buffer.contents() as *mut T
+    }
+
+    #[inline]
     pub fn value(&self) -> T {
         unsafe {
-            *(self.buffer.contents() as *const T)
+            *self.as_ptr()
         }
     }
 
+    #[inline]
     pub fn set_value(&mut self, value: T) {
         unsafe {
             std::ptr::copy(
                 &value,
-                self.buffer.contents() as *mut T,
+                self.as_mut_ptr(),
                 Self::element_size()
             );
         }
@@ -55,7 +68,6 @@ impl<T: Copy> AsMut<metal::Buffer> for GPUVar<T> {
         &mut self.buffer
     }
 }
-
 
 mod tests {
     use crate::GPUVar;

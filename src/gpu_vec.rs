@@ -134,7 +134,7 @@ impl<T: Copy> GPUVec<T> {
 
     /// Reserves space for at least `addtional` more elements;
     pub fn reserve(&mut self, additional: usize) {
-        self.resize(self.capacity() + 1)
+        self.resize(self.capacity() + additional)
     }
 
     /// untested
