@@ -872,6 +872,21 @@ mod tests {
         assert!(vec[2] == 4);
         assert!(vec[3] == 6);
     }
+
+    #[test]
+    fn test_eq() {
+        let dev = metal::Device::system_default().unwrap();
+        let va: Vec<usize> = vec![0,1,2,3,4,5,6];
+        let vb: Vec<usize> = vec![0,1,2,3,4,5,6];
+        let vc: Vec<usize> = vec![0,1,2,3,4,5,7];
+
+        let mut a = GPUVec::from_iter(&dev, &va);
+        let mut b = GPUVec::from_iter(&dev, &vb);
+        let mut c = GPUVec::from_iter(&dev, &vc);
+
+        assert!(a == b);
+        assert!(b != c);
+    }
 }
 
 
