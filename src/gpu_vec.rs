@@ -659,6 +659,8 @@ impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
 // // }
 
 
+unsafe impl<T: Copy> Send for GPUVec<T> { }
+unsafe impl<T: Copy> Sync for GPUVec<T> { }
 
 mod tests {
     use super::*;
@@ -683,7 +685,6 @@ mod tests {
             assert!(gpuvec[e] == e);
         }
     }
-
 
     #[test]
     fn test_index() {
