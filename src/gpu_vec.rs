@@ -278,17 +278,17 @@ impl<T: Copy> GPUVec<T> {
         self.len = new_len;
     }
 
-    // pub fn swap_remove(&mut self, index: usize) -> T {
-    //     unsafe {
-    //         // We replace self[index] with the last element. Note that if the
-    //         // bounds check on hole succeeds there must be a last element (which
-    //         // can be self[index] itself).
-    //         let hole: *mut T = &mut self[index];
-    //         let last = std::ptr::read(self.get_unchecked(self.len - 1));
-    //         self.len -= 1;
-    //         ptr::replace(hole, last)
-    //     }
-    // }
+    pub fn swap_remove(&mut self, index: usize) -> T {
+        unsafe {
+            // We replace self[index] with the last element. Note that if the
+            // bounds check on hole succeeds there must be a last element (which
+            // can be self[index] itself).
+            let hole: *mut T = &mut self[index];
+            let last = std::ptr::read(self.as_ptr().offset((self.len - 1) as isize));
+            self.len -= 1;
+            std::ptr::replace(hole, last)
+        }
+    }
 
     #[inline]
     pub fn is_empty(&self) -> bool {
@@ -391,6 +391,15 @@ impl<T: Copy> Extend<T> for GPUVec<T> {
     fn extend<I: IntoIterator<Item=T>>(&mut self, iter: I) {
         let v: Vec<T> = iter.into_iter().collect();
         self.extend_from_slice(&v);
+    }
+}
+
+impl<T: Copy + std::fmt::Display> std::fmt::Display for GPUVec<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        for i in 0..self.len() {
+            write!(f, "{}", self[i]);
+        }
+        Ok(())
     }
 }
 
@@ -658,7 +667,6 @@ impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
 // //     }
 // // }
 
-
 unsafe impl<T: Copy> Send for GPUVec<T> { }
 unsafe impl<T: Copy> Sync for GPUVec<T> { }
 
@@ -887,6 +895,21 @@ mod tests {
 
         assert!(a == b);
         assert!(b != c);
+    }
+
+    #[test]
+    fn test_swap_remove() {
+        let dev = metal::Device::system_default().unwrap();
+        let v: Vec<usize> = vec![0,1,2,3,4,5,6];
+        let mut vec = GPUVec::from_iter(&dev, &v);
+
+        let e: Vec<usize> = vec![0,1,2,6,4,5];
+        let expected = GPUVec::from_iter(&dev, &e);
+
+        let res = vec.swap_remove(3);
+
+        assert!(res == 3);
+        assert!(expected == vec);
     }
 }
 
