@@ -96,16 +96,6 @@ impl<T: Copy> GPUVec<T> {
         Self::element_size() * self.capacity()
     }
 
-    #[inline]
-    pub fn as_ptr(&self) -> *const T {
-        self.buffer.contents() as *const T
-    }
-
-    #[inline]
-    pub fn as_mut_ptr(&self) -> *mut T {
-        self.buffer.contents() as *mut T
-    }
-
     pub fn resize(&mut self, capacity: usize) {
         if capacity <= self.capacity() {
             return;
@@ -146,8 +136,52 @@ impl<T: Copy> GPUVec<T> {
     /// untested
     #[inline]
     pub fn truncate(&mut self, len: usize) {
+        if len > self.len {
+            return;
+        }
+
         unsafe {
             self.set_len(len)
+        }
+    }
+
+    // untested
+    #[inline]
+    pub fn as_slice(&self) -> &[T] {
+        self
+    }
+
+    // untested
+    #[inline]
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        self
+    }
+
+    #[inline]
+    pub fn as_ptr(&self) -> *const T {
+        self.buffer.contents() as *const T
+    }
+
+    #[inline]
+    pub fn as_mut_ptr(&self) -> *mut T {
+        self.buffer.contents() as *mut T
+    }
+
+    #[inline]
+    pub unsafe fn set_len(&mut self, new_len: usize) {
+        debug_assert!(new_len <= self.capacity());
+        self.len = new_len;
+    }
+
+    pub fn swap_remove(&mut self, index: usize) -> T {
+        unsafe {
+            // We replace self[index] with the last element. Note that if the
+            // bounds check on hole succeeds there must be a last element (which
+            // can be self[index] itself).
+            let hole: *mut T = &mut self[index];
+            let last = std::ptr::read(self.as_ptr().offset((self.len - 1) as isize));
+            self.len -= 1;
+            std::ptr::replace(hole, last)
         }
     }
 
@@ -394,35 +428,7 @@ impl<T: Copy> GPUVec<T> {
         other
     }
 
-    #[inline]
-    pub unsafe fn set_len(&mut self, new_len: usize) {
-        debug_assert!(new_len <= self.capacity());
-        self.len = new_len;
-    }
 
-    pub fn swap_remove(&mut self, index: usize) -> T {
-        unsafe {
-            // We replace self[index] with the last element. Note that if the
-            // bounds check on hole succeeds there must be a last element (which
-            // can be self[index] itself).
-            let hole: *mut T = &mut self[index];
-            let last = std::ptr::read(self.as_ptr().offset((self.len - 1) as isize));
-            self.len -= 1;
-            std::ptr::replace(hole, last)
-        }
-    }
-
-    // untested
-    #[inline]
-    pub fn as_slice(&self) -> &[T] {
-        self
-    }
-
-    // untested
-    #[inline]
-    pub fn as_mut_slice(&mut self) -> &mut [T] {
-        self
-    }
 
     pub fn iter(&self) -> Iter<T> {
         todo!()
