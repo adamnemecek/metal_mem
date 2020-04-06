@@ -47,8 +47,8 @@ impl<T: Copy> GPUResource for GPUVec<T> {
 
 // impl<T: Copy> std::iter::FromIterator<T> for GPUVec<T> {
 //     #[inline]
-//     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> GPUVec<T> {
-//         // <Self as SpecExtend<T, I::IntoIter>>::from_iter(iter.into_iter())
+//     fn from_slice<I: IntoIterator<Item = T>>(iter: I) -> GPUVec<T> {
+//         // <Self as SpecExtend<T, I::IntoIter>>::from_slice(iter.into_iter())
 //         todo!()
 //     }
 // }
@@ -73,7 +73,7 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
-    pub fn from_iter(device: &metal::DeviceRef, data: &[T]) -> Self {
+    pub fn from_slice(device: &metal::DeviceRef, data: &[T]) -> Self {
         let len = data.len();
         let mut ret = Self::with_capacity(device, len);
 
@@ -990,7 +990,7 @@ mod tests {
     fn test_new() {
         let dev = metal::Device::system_default().unwrap();
         let vec: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let gpuvec = GPUVec::from_iter(&dev, &vec);
+        let gpuvec = GPUVec::from_slice(&dev, &vec);
         println!("capacity: {}", gpuvec.capacity());
 
         for e in 0..gpuvec.len() {
@@ -1002,7 +1002,7 @@ mod tests {
     fn test_index() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let vec = GPUVec::from_iter(&dev, &v);
+        let vec = GPUVec::from_slice(&dev, &v);
 
         assert!(vec[0] == 0);
         assert!(vec[1] == 1);
@@ -1017,7 +1017,7 @@ mod tests {
     fn test_index_mut() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let mut vec = GPUVec::from_iter(&dev, &v);
+        let mut vec = GPUVec::from_slice(&dev, &v);
 
         vec[0] = 8;
         vec[1] = 8;
@@ -1040,7 +1040,7 @@ mod tests {
     fn test_extend() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let mut vec = GPUVec::from_iter(&dev, &v);
+        let mut vec = GPUVec::from_slice(&dev, &v);
         vec.extend(v);
 
         assert!(vec.len() == 14);
@@ -1066,7 +1066,7 @@ mod tests {
     fn test_extend_from_slice() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let mut vec = GPUVec::from_iter(&dev, &v);
+        let mut vec = GPUVec::from_slice(&dev, &v);
         vec.extend_from_slice(&v);
         // assert!(ret == v.len());
 
@@ -1094,7 +1094,7 @@ mod tests {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
 
-        let mut vec = GPUVec::from_iter(&dev, &v);
+        let mut vec = GPUVec::from_slice(&dev, &v);
         vec.push(7);
 
         assert!(v.len() == 7);
@@ -1115,7 +1115,7 @@ mod tests {
     fn test_insert() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,4,5,6];
-        let mut vec = GPUVec::from_iter(&dev, &v);
+        let mut vec = GPUVec::from_slice(&dev, &v);
         vec.insert(3, 3);
 
         assert!(vec[0] == 0);
@@ -1131,7 +1131,7 @@ mod tests {
     fn test_truncate() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let mut vec = GPUVec::from_iter(&dev, &v);
+        let mut vec = GPUVec::from_slice(&dev, &v);
         vec.truncate(3);
 
         assert!(vec.len() == 3);
@@ -1150,7 +1150,7 @@ mod tests {
     fn test_remove() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let mut vec = GPUVec::from_iter(&dev, &v);
+        let mut vec = GPUVec::from_slice(&dev, &v);
         vec.remove(3);
 
         assert!(vec[0] == 0);
@@ -1165,7 +1165,7 @@ mod tests {
     // fn test_iter() {
     //     let dev = metal::Device::system_default().unwrap();
     //     let mut vec: Vec<usize> = vec![0,1,2,3,4,5,6];
-    //     let gpuvec = GPUVec::from_iter(&dev, &vec);
+    //     let gpuvec = GPUVec::from_slice(&dev, &vec);
 
     //     // let z = gpuvec.iter().
     //     let sum = gpuvec.into_iter().fold(0, |a, b| a + b );
@@ -1200,7 +1200,7 @@ mod tests {
     fn test_iter_mut() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let mut vec = GPUVec::from_iter(&dev, &v);
+        let mut vec = GPUVec::from_slice(&dev, &v);
 
         // let mut v1 = vec![1, 2, 3];
         // let mut v1_iter = v1.iter_mut();
@@ -1216,7 +1216,7 @@ mod tests {
     fn test_retain() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let mut vec = GPUVec::from_iter(&dev, &v);
+        let mut vec = GPUVec::from_slice(&dev, &v);
         vec.retain(|x| x % 2 == 0);
         assert!(vec.len() == 4);
 
@@ -1233,9 +1233,9 @@ mod tests {
         let vb: Vec<usize> = vec![0,1,2,3,4,5,6];
         let vc: Vec<usize> = vec![0,1,2,3,4,5,7];
 
-        let mut a = GPUVec::from_iter(&dev, &va);
-        let mut b = GPUVec::from_iter(&dev, &vb);
-        let mut c = GPUVec::from_iter(&dev, &vc);
+        let mut a = GPUVec::from_slice(&dev, &va);
+        let mut b = GPUVec::from_slice(&dev, &vb);
+        let mut c = GPUVec::from_slice(&dev, &vc);
 
         assert!(a == b);
         assert!(b != c);
@@ -1246,7 +1246,7 @@ mod tests {
     //     let dev = metal::Device::system_default().unwrap();
     //     let a: Vec<usize> = vec![0,1,2,3,4,5,6];
 
-    //     let mut vec = GPUVec::from_iter(&dev, &a);
+    //     let mut vec = GPUVec::from_slice(&dev, &a);
 
 
     //     /// same size
@@ -1272,8 +1272,8 @@ mod tests {
 
     //     // assert!(vec[3] == 6);
 
-    //     // let mut b = GPUVec::from_iter(&dev, &vb);
-    //     // let mut c = GPUVec::from_iter(&dev, &vc);
+    //     // let mut b = GPUVec::from_slice(&dev, &vb);
+    //     // let mut c = GPUVec::from_slice(&dev, &vc);
 
     //     // assert!(a == b);
     //     // assert!(b != c);
@@ -1283,10 +1283,10 @@ mod tests {
     fn test_swap_remove() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let mut vec = GPUVec::from_iter(&dev, &v);
+        let mut vec = GPUVec::from_slice(&dev, &v);
 
         let e: Vec<usize> = vec![0,1,2,6,4,5];
-        let expected = GPUVec::from_iter(&dev, &e);
+        let expected = GPUVec::from_slice(&dev, &e);
 
         let res = vec.swap_remove(3);
 
@@ -1298,7 +1298,7 @@ mod tests {
     fn test_clone() {
         let dev = metal::Device::system_default().unwrap();
         let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let vec = GPUVec::from_iter(&dev, &v);
+        let vec = GPUVec::from_slice(&dev, &v);
         let copy = vec.clone();
 
         assert!(copy[0] == 0);
