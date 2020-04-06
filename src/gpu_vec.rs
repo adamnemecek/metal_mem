@@ -319,7 +319,7 @@ impl<T: Copy> GPUVec<T> {
     //     // R: std::ops::RangeBounds<usize>,
     //     {
     //     use std::ops::RangeBounds;
-        
+
 
     //     unsafe {
     //         let mut new_elements_vec: Vec<T> = replace_with.into_iter().collect();
@@ -669,6 +669,13 @@ impl<T: Hash + Copy> Hash for GPUVec<T> {
     }
 }
 
+impl<T: Copy + PartialOrd> PartialOrd for GPUVec<T> {
+    #[inline]
+    fn partial_cmp(&self, other: &GPUVec<T>) -> Option<std::cmp::Ordering> {
+        PartialOrd::partial_cmp(&**self, &**other)
+    }
+}
+
 pub struct Iter<'a, T: Copy> {
     inner: &'a GPUVec<T>,
     idx: usize,
@@ -738,21 +745,37 @@ impl<'a, T: Copy> ExactSizeIterator for Iter<'a, T> {
 // use core::iter::{self, Extend, FromIterator, FusedIterator};
 impl<'a, T: Copy> std::iter::FusedIterator for Iter<'a, T> {}
 
-pub struct IntoIter<'a, T: Copy> {
-    inner: &'a GPUVec<T>,
+
+////////////////////////////////////////////////////////////////////////////////
+// Iterators
+////////////////////////////////////////////////////////////////////////////////
+
+/// An iterator that moves out of a vector.
+///
+/// This `struct` is created by the `into_iter` method on [`Vec`] (provided
+/// by the [`IntoIterator`] trait).
+///
+/// [`Vec`]: struct.Vec.html
+/// [`IntoIterator`]: ../../std/iter/trait.IntoIterator.html
+
+pub struct IntoIter<T: Copy> {
+    inner: GPUVec<T>,
     idx: usize
 }
 
-impl<'a, T: Copy> GPUVec<T> {
-    fn into_iter(self) -> IntoIter<'a, T> {
-        Self {
-            inner: &self,
+impl<T: Copy> IntoIterator for GPUVec<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+    fn into_iter(self) -> IntoIter<T> {
+        // todo!()
+        IntoIter {
+            inner: self,
             idx: 0
         }
     }
 }
 
-impl<'a, T: Copy> Iterator for IntoIter<'a, T> {
+impl<T: Copy> Iterator for IntoIter<T> {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         if self.idx >= self.inner.len() {
@@ -1062,6 +1085,46 @@ mod tests {
     //     let sum = gpuvec.into_iter().fold(0, |a, b| a + b );
     //     assert!(sum == 21);
     // }
+
+    #[test]
+    fn test_iter() {
+        // let v1 = vec![1, 2, 3];
+        // let mut v1_iter = v1.iter();
+
+        // // iter() returns an iterator of slices.
+        // assert_eq!(v1_iter.next(), Some(&1));
+        // assert_eq!(v1_iter.next(), Some(&2));
+        // assert_eq!(v1_iter.next(), Some(&3));
+        // assert_eq!(v1_iter.next(), None);
+    }
+
+    #[test]
+    fn test_into_iter() {
+        // let v1 = vec![1, 2, 3];
+        // let mut v1_iter = v1.into_iter();
+
+        // // into_iter() returns an iterator from a value.
+        // assert_eq!(v1_iter.next(), Some(1));
+        // assert_eq!(v1_iter.next(), Some(2));
+        // assert_eq!(v1_iter.next(), Some(3));
+        // assert_eq!(v1_iter.next(), None);
+    }
+
+    #[test]
+    fn test_iter_mut() {
+        let dev = metal::Device::system_default().unwrap();
+        let v: Vec<usize> = vec![0,1,2,3,4,5,6];
+        let mut vec = GPUVec::from_iter(&dev, &v);
+
+        // let mut v1 = vec![1, 2, 3];
+        // let mut v1_iter = v1.iter_mut();
+
+        // // iter_mut() returns an iterator that allows modifying each value.
+        // assert_eq!(v1_iter.next(), Some(&mut 1));
+        // assert_eq!(v1_iter.next(), Some(&mut 2));
+        // assert_eq!(v1_iter.next(), Some(&mut 3));
+        // assert_eq!(v1_iter.next(), None);
+    }
 
     #[test]
     fn test_retain() {
