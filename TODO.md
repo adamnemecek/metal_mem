@@ -4,4 +4,7 @@
 * [ ] fix iterators
 * [ ] drain
 
-* 
+* [ ] debug_tuple
+* [ ] truncate
+
+* [ ] deref makes vec behave like a slice

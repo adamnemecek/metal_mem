@@ -28,7 +28,7 @@ pub struct GPUVec<T: Copy> {
 }
 
 impl<T: Copy> GPUVec<T> {
-    pub fn new(device: &metal::DeviceRef, capacity: usize) -> Self {
+    pub fn with_capacity(device: &metal::DeviceRef, capacity: usize) -> Self {
         let byte_capacity = page_aligned(capacity * Self::element_size()) as u64;
         let buffer = device.new_buffer(
             byte_capacity,
@@ -43,20 +43,9 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
-    // pub fn new_with_page(device: &'a metal::DeviceRef, page: usize) -> Self {
-    //     todo!()
-    //     // Self {
-    //     //     device,
-    //     //     buffer,
-    //     //     len: 0,
-    //     //     capacity,
-    //     //     phantom: std::marker::PhantomData
-    //     // }
-    // }
-
     pub fn from_iter(device: &metal::DeviceRef, data: &[T]) -> Self {
         let len = data.len();
-        let mut ret = Self::new(device, len);
+        let mut ret = Self::with_capacity(device, len);
 
         unsafe {
             std::ptr::copy(
@@ -69,6 +58,15 @@ impl<T: Copy> GPUVec<T> {
         ret.len = len;
         ret
     }
+
+    /// Reserves space for at least `addtional` more elements;
+    pub fn reserve(&mut self, additional: usize) {
+        self.resize(self.capacity() + additional)
+    }
+
+    // pub fn shrink_to(&mut self, min_capacity: usize) {
+    //     self.buf.shrink_to_fit(cmp::max(self.len, min_capacity));
+    // }
 
     #[inline]
     fn element_size() -> usize {
@@ -132,15 +130,12 @@ impl<T: Copy> GPUVec<T> {
     //     GPUAlloc::new(offset, slice)
     // }
 
-    /// Reserves space for at least `addtional` more elements;
-    pub fn reserve(&mut self, additional: usize) {
-        self.resize(self.capacity() + additional)
-    }
-
     /// untested
     #[inline]
     pub fn truncate(&mut self, len: usize) {
-        self.set_len(len)
+        unsafe {
+            self.set_len(len)
+        }
     }
 
     pub fn insert(&mut self, index: usize, element: T) {
@@ -192,6 +187,48 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&T) -> bool,
+    {
+        let len = self.len();
+        let mut del = 0;
+        {
+            let v = &mut **self;
+
+            for i in 0..len {
+                if !f(&v[i]) {
+                    del += 1;
+                } else if del > 0 {
+                    v.swap(i - del, i);
+                }
+            }
+        }
+        if del > 0 {
+            self.truncate(len - del);
+        }
+    }
+
+    // #[inline]
+    // pub fn dedup_by_key<F, K>(&mut self, mut key: F)
+    // where
+    //     F: FnMut(&mut T) -> K,
+    //     K: PartialEq,
+    // {
+    //     self.dedup_by(|a, b| key(a) == key(b))
+    // }
+
+    // pub fn dedup_by<F>(&mut self, same_bucket: F)
+    // where
+    //     F: FnMut(&mut T, &mut T) -> bool,
+    // {
+    //     let len = {
+    //         let (dedup, _) = self.as_mut_slice().partition_dedup_by(same_bucket);
+    //         dedup.len()
+    //     };
+    //     self.truncate(len);
+    // }
+
     pub fn extend_from_slice(&mut self, v: &[T]) {
         let offset = self.len();
 
@@ -241,28 +278,6 @@ impl<T: Copy> GPUVec<T> {
             let last = self[self.len()];
             self.len -= 1;
             Some(last)
-        }
-    }
-
-    pub fn retain<F>(&mut self, mut f: F)
-    where
-        F: FnMut(&T) -> bool,
-    {
-        let len = self.len();
-        let mut del = 0;
-        {
-            let v = &mut **self;
-
-            for i in 0..len {
-                if !f(&v[i]) {
-                    del += 1;
-                } else if del > 0 {
-                    v.swap(i - del, i);
-                }
-            }
-        }
-        if del > 0 {
-            self.truncate(len - del);
         }
     }
 
@@ -428,7 +443,7 @@ impl<T: Copy> GPUVec<T> {
     }
 
     #[inline]
-    pub fn set_len(&mut self, new_len: usize) {
+    pub unsafe fn set_len(&mut self, new_len: usize) {
         debug_assert!(new_len <= self.capacity());
         self.len = new_len;
     }
@@ -457,7 +472,9 @@ impl<T: Copy> GPUVec<T> {
 
     #[inline]
     pub fn clear(&mut self) {
-        self.set_len(0)
+        unsafe {
+            self.set_len(0)
+        }
     }
 
     // untested
@@ -782,10 +799,15 @@ impl<T: Copy> Iterator for IntoIter<T> {
             None
         }
         else {
-            let ret = self.inner[self.idx];
+            let result = self.inner[self.idx];
             self.idx += 1;
-            Some(ret)
+            Some(result)
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.inner.len() - self.idx;
+        (len, Some(len))
     }
 }
 
