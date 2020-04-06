@@ -266,6 +266,152 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
+    // pub fn drain<R>(&mut self, range: R) -> Drain<'_, T>
+    // where
+    //     R: RangeBounds<usize>,
+    // {
+    //     // Memory safety
+    //     //
+    //     // When the Drain is first created, it shortens the length of
+    //     // the source vector to make sure no uninitialized or moved-from elements
+    //     // are accessible at all if the Drain's destructor never gets to run.
+    //     //
+    //     // Drain will ptr::read out the values to remove.
+    //     // When finished, remaining tail of the vec is copied back to cover
+    //     // the hole, and the vector length is restored to the new length.
+    //     //
+    //     let len = self.len();
+    //     let start = match range.start_bound() {
+    //         Included(&n) => n,
+    //         Excluded(&n) => n + 1,
+    //         Unbounded => 0,
+    //     };
+    //     let end = match range.end_bound() {
+    //         Included(&n) => n + 1,
+    //         Excluded(&n) => n,
+    //         Unbounded => len,
+    //     };
+    //     assert!(start <= end);
+    //     assert!(end <= len);
+
+    //     unsafe {
+    //         // set self.vec length's to start, to be safe in case Drain is leaked
+    //         self.set_len(start);
+    //         // Use the borrow in the IterMut to indicate borrowing behavior of the
+    //         // whole Drain iterator (like &mut T).
+    //         let range_slice = slice::from_raw_parts_mut(self.as_mut_ptr().add(start), end - start);
+    //         Drain {
+    //             tail_start: end,
+    //             tail_len: len - end,
+    //             iter: range_slice.iter(),
+    //             vec: NonNull::from(self),
+    //         }
+    //     }
+    // }
+
+    pub fn replace_subrange<R, I>(
+        &mut self,
+        subrange: std::ops::Range<usize>,
+        replace_with: I
+    ) //-> Splice<<I as IntoIterator>::IntoIter>
+    where
+        I: IntoIterator<Item = T>,
+        {
+
+        unsafe {
+            let mut new_elements_vec: Vec<T> = replace_with.into_iter().collect();
+            let new_len = new_elements_vec.len();
+            let new_elements = new_elements_vec.as_mut_ptr();
+    
+            let old_len = self.len();
+            let erase_count = subrange.len();
+    
+            let growth = new_len - erase_count;
+            self.set_len(old_len + growth);
+
+            let elements = self.as_mut_ptr();
+            let old_tail_index = subrange.end;
+            let mut old_tail_start = &elements.offset(old_tail_index as isize);
+            let new_tail_index = old_tail_index + growth;
+            let mut new_tail_start = old_tail_start.offset(growth as isize);
+            let tail_count = old_len - subrange.end;
+
+            if growth > 0 {
+                // Slide the tail part of the buffer forwards, in reverse order
+                // so as not to self-clobber.
+                // newTailStart.moveInitialize(from: oldTailStart, count: tailCount)
+                std::ptr::copy(
+                    old_tail_start,
+                    &mut new_tail_start,
+                    tail_count
+                );
+
+                // Assign over the original subrange
+                let mut i = 0;
+                for j in subrange {
+                    *elements.offset(j as isize) = new_elements_vec[i];
+                    i += 1; 
+                }
+                // Initialize the hole left by sliding the tail forward
+                for j in old_tail_index..new_tail_index {
+                    *elements.offset(j as isize) = new_elements_vec[i];
+                    i += 1;
+                }
+            }
+            else { // We're not growing the buffer
+                // Assign all the new elements into the start of the subrange
+                let mut i = subrange.start;
+                let j = 0; // todo
+                let mut j = 0;
+                for _ in 0..new_len {
+                    *elements.offset(i as isize) = new_elements_vec[j];
+                    i += 1;
+                    j += 1;
+                }
+
+                // If the size didn't change, we're done.
+                if growth == 0 {
+                    return;
+                }
+                
+                // Move the tail backward to cover the shrinkage.
+                let shrinkage = -(growth as isize);
+                if tail_count as isize > shrinkage {   // If the tail length exceeds the shrinkage
+                    // Assign over the rest of the replaced range with the first
+                    // part of the tail.
+                    // newTailStart.moveAssign(from: oldTailStart, count: shrinkage)
+                    std::ptr::copy(
+                        old_tail_start,
+                        &mut new_tail_start,
+                        shrinkage as usize
+                    );
+                    
+                    // Slide the rest of the tail back
+                    // oldTailStart.moveInitialize(
+                        // from: oldTailStart + shrinkage, count: tailCount - shrinkage)
+                    std::ptr::copy(
+                        old_tail_start.offset(shrinkage),
+                        *old_tail_start,
+                        tail_count - shrinkage as usize
+                    );
+                }
+                else {                      // Tail fits within erased elements
+                    // Assign over the start of the replaced range with the tail
+                    // newTailStart.moveAssign(from: oldTailStart, count: tailCount)
+                    
+                    std::ptr::copy(
+                        old_tail_start,
+                        &mut new_tail_start,
+                        tail_count
+                    );
+                    // Destroy elements remaining after the tail in subrange
+                    // (newTailStart + tailCount).deinitialize(
+                        // count: shrinkage - tailCount)
+                }
+            }
+        }
+    }
+
     // in elements, not bytes.
     #[inline]
     pub fn len(&self) -> usize {
@@ -670,6 +816,18 @@ impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
 unsafe impl<T: Copy> Send for GPUVec<T> { }
 unsafe impl<T: Copy> Sync for GPUVec<T> { }
 
+// impl<T: Copy> Drop for GPUVec<T> {
+//     fn drop(&mut self) {
+//         // println!("Dropping!");
+//     }
+// }
+
+// impl<T: Copy> Copy for GPUVec<T> {
+//     fn copy(&self) -> Self {
+//         todo!()
+//     }
+// }
+
 mod tests {
     use super::*;
 
@@ -895,6 +1053,26 @@ mod tests {
 
         assert!(a == b);
         assert!(b != c);
+    }
+
+    #[test]
+    fn test_replace_subrange() {
+        let dev = metal::Device::system_default().unwrap();
+        let a: Vec<usize> = vec![0,1,2,3,4,5,6];
+
+        let a = GPUVec::from_iter(&dev, &va);
+        a.replace_subrange(0..2, vec![10, 11]);
+
+        assert!(vec[0] == 10);
+        assert!(vec[1] == 11);
+        assert!(vec[2] == 2);
+        // assert!(vec[3] == 6);
+
+        // let mut b = GPUVec::from_iter(&dev, &vb);
+        // let mut c = GPUVec::from_iter(&dev, &vc);
+
+        // assert!(a == b);
+        // assert!(b != c);
     }
 
     #[test]
