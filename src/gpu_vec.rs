@@ -570,6 +570,34 @@ pub struct Drain<'a, T: Copy + 'a> {
     // inner: &'a GPUVec<T>
 }
 
+impl<T: Copy> Iterator for Drain<'_, T> {
+    type Item = T;
+
+    #[inline]
+    fn next(&mut self) -> Option<T> {
+        self.iter.next().map(|elt| unsafe { std::ptr::read(elt as *const _) })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+pub struct Splice<'a, I: Iterator + 'a> where I::Item : Copy{
+    drain: Drain<'a, I::Item>,
+    replace_with: I,
+}
+
+impl<T: Copy> GPUVec<T> {
+    pub fn splice<R, I>(&mut self, range: R, replace_with: I) -> Splice<'_, I::IntoIter>
+    where
+        R: RangeBounds<usize>,
+        I: IntoIterator<Item = T>,
+    {
+        Splice { drain: self.drain(range), replace_with: replace_with.into_iter() }
+    }
+}
+
 impl<T: Copy> Clone for GPUVec<T> {
     fn clone(&self) -> Self {
         let byte_capacity = self.byte_capacity();
@@ -593,6 +621,10 @@ impl<T: Copy> Clone for GPUVec<T> {
             phantom: std::marker::PhantomData
         }
     }
+
+    // fn clone_from(&mut self, other: &Vec<T>) {
+    //     other.as_slice().clone_into(self);
+    // }
 }
 
 // impl <'a> GPUVec<'a, nvg::renderer::Vertex> {
@@ -776,6 +808,41 @@ impl<T: Copy> Iterator for IntoIter<T> {
         (len, Some(len))
     }
 }
+
+impl<T: Copy> DoubleEndedIterator for IntoIter<T> {
+    fn next_back(&mut self) -> Option<T> {
+        todo!()
+        // unsafe {
+        //     if self.end == self.ptr {
+        //         None
+        //     } else {
+        //         if mem::size_of::<T>() == 0 {
+        //             // See above for why 'ptr.offset' isn't used
+        //             self.end = arith_offset(self.end as *const i8, -1) as *mut T;
+
+        //             // Make up a value of this ZST.
+        //             Some(mem::zeroed())
+        //         } else {
+        //             self.end = self.end.offset(-1);
+
+        //             Some(ptr::read(self.end))
+        //         }
+        //     }
+        // }
+    }
+}
+
+// #[feature(exact_size_is_empty)]
+// impl<T: Copy> ExactSizeIterator for IntoIter<T> {
+//     fn is_empty(&self) -> bool {
+//         // self.ptr == self.end
+//         todo!()
+//     }
+// }
+
+// impl<T> FusedIterator for IntoIter<T> {}
+
+// unsafe impl<T> TrustedLen for IntoIter<T> {}
 
 // #[derive(Debug)]
 pub struct IterMut<'a, T: Copy> {

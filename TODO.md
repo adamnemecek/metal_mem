@@ -10,3 +10,4 @@
 * [ ] deref makes vec behave like a slice
 * [ ] dedup dedupbykey
 * [ ] append
+* [ ] in drain, what is T: Copy + 'a
