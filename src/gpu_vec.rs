@@ -195,7 +195,7 @@ impl<T: Copy> GPUVec<T> {
     pub fn extend_from_slice(&mut self, v: &[T]) {
         let offset = self.len();
 
-        let new_len = self.len() + v.len(); 
+        let new_len = self.len() + v.len();
 
         self.resize(new_len);
 
@@ -309,7 +309,7 @@ impl<T: Copy> GPUVec<T> {
     //     }
     // }
 
-    pub fn replace_subrange<R, I>(
+    pub fn replace_subrange<I>(
         &mut self,
         subrange: std::ops::Range<usize>,
         replace_with: I
@@ -322,12 +322,18 @@ impl<T: Copy> GPUVec<T> {
             let mut new_elements_vec: Vec<T> = replace_with.into_iter().collect();
             let new_len = new_elements_vec.len();
             let new_elements = new_elements_vec.as_mut_ptr();
-    
+
             let old_len = self.len();
             let erase_count = subrange.len();
-    
+
             let growth = new_len - erase_count;
-            self.set_len(old_len + growth);
+
+            if growth > 0 {
+                self.reserve(growth);
+            }
+            else {
+                self.set_len(old_len + growth);
+            }
 
             let elements = self.as_mut_ptr();
             let old_tail_index = subrange.end;
@@ -350,7 +356,7 @@ impl<T: Copy> GPUVec<T> {
                 let mut i = 0;
                 for j in subrange {
                     *elements.offset(j as isize) = new_elements_vec[i];
-                    i += 1; 
+                    i += 1;
                 }
                 // Initialize the hole left by sliding the tail forward
                 for j in old_tail_index..new_tail_index {
@@ -373,7 +379,7 @@ impl<T: Copy> GPUVec<T> {
                 if growth == 0 {
                     return;
                 }
-                
+
                 // Move the tail backward to cover the shrinkage.
                 let shrinkage = -(growth as isize);
                 if tail_count as isize > shrinkage {   // If the tail length exceeds the shrinkage
@@ -385,7 +391,7 @@ impl<T: Copy> GPUVec<T> {
                         &mut new_tail_start,
                         shrinkage as usize
                     );
-                    
+
                     // Slide the rest of the tail back
                     // oldTailStart.moveInitialize(
                         // from: oldTailStart + shrinkage, count: tailCount - shrinkage)
@@ -398,7 +404,7 @@ impl<T: Copy> GPUVec<T> {
                 else {                      // Tail fits within erased elements
                     // Assign over the start of the replaced range with the tail
                     // newTailStart.moveAssign(from: oldTailStart, count: tailCount)
-                    
+
                     std::ptr::copy(
                         old_tail_start,
                         &mut new_tail_start,
@@ -543,7 +549,7 @@ impl<T: Copy> Extend<T> for GPUVec<T> {
 impl<T: Copy + std::fmt::Display> std::fmt::Display for GPUVec<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         for i in 0..self.len() {
-            write!(f, "{}", self[i]);
+            writeln!(f, "{}", self[i]);
         }
         Ok(())
     }
@@ -1060,12 +1066,27 @@ mod tests {
         let dev = metal::Device::system_default().unwrap();
         let a: Vec<usize> = vec![0,1,2,3,4,5,6];
 
-        let a = GPUVec::from_iter(&dev, &va);
-        a.replace_subrange(0..2, vec![10, 11]);
+        let mut vec = GPUVec::from_iter(&dev, &a);
+
+
+        /// same size
+        vec.replace_subrange(0..2, vec![10, 11]);
 
         assert!(vec[0] == 10);
         assert!(vec[1] == 11);
         assert!(vec[2] == 2);
+
+        vec.replace_subrange(0..2, vec![10, 11, 12]);
+
+        println!("{}", vec);
+
+        assert!(vec[0] == 10);
+        assert!(vec[1] == 11);
+        assert!(vec[2] == 12);
+        assert!(vec[3] == 2);
+
+
+
         // assert!(vec[3] == 6);
 
         // let mut b = GPUVec::from_iter(&dev, &vb);
