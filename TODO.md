@@ -11,3 +11,5 @@
 * [ ] dedup dedupbykey
 * [ ] append
 * [ ] in drain, what is T: Copy + 'a
+* [ ] doubleendediterator
+* [ ] 

@@ -588,6 +588,24 @@ pub struct Splice<'a, I: Iterator + 'a> where I::Item : Copy{
     replace_with: I,
 }
 
+impl<I: Iterator> Iterator for Splice<'_, I> where I::Item : Copy {
+    type Item = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.drain.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.drain.size_hint()
+    }
+}
+
+// impl<I: Iterator> DoubleEndedIterator for Splice<'_, I> where I::Item : Copy {
+//     fn next_back(&mut self) -> Option<Self::Item> {
+//         self.drain.next_back()
+//     }
+// }
+
 impl<T: Copy> GPUVec<T> {
     pub fn splice<R, I>(&mut self, range: R, replace_with: I) -> Splice<'_, I::IntoIter>
     where
@@ -616,7 +634,7 @@ impl<T: Copy> Clone for GPUVec<T> {
         Self {
             device: self.device.to_owned(),
             buffer,
-            len: 0,
+            len: self.len(),
             capacity: self.capacity(),
             phantom: std::marker::PhantomData
         }
@@ -677,6 +695,8 @@ impl<T: Copy + PartialEq> PartialEq for GPUVec<T> {
     }
 }
 
+impl<T: Copy + Eq> Eq for GPUVec<T> { }
+
 impl<T: Hash + Copy> Hash for GPUVec<T> {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -688,6 +708,13 @@ impl<T: Copy + PartialOrd> PartialOrd for GPUVec<T> {
     #[inline]
     fn partial_cmp(&self, other: &GPUVec<T>) -> Option<std::cmp::Ordering> {
         PartialOrd::partial_cmp(&**self, &**other)
+    }
+}
+
+impl<T: Copy + Ord> Ord for GPUVec<T> {
+    #[inline]
+    fn cmp(&self, other: &GPUVec<T>) -> std::cmp::Ordering {
+        Ord::cmp(&**self, &**other)
     }
 }
 
@@ -806,6 +833,10 @@ impl<T: Copy> Iterator for IntoIter<T> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         let len = self.inner.len() - self.idx;
         (len, Some(len))
+    }
+
+    fn count(self) -> usize {
+        self.inner.len()
     }
 }
 
@@ -1261,6 +1292,22 @@ mod tests {
 
         assert!(res == 3);
         assert!(expected == vec);
+    }
+
+    #[test]
+    fn test_clone() {
+        let dev = metal::Device::system_default().unwrap();
+        let v: Vec<usize> = vec![0,1,2,3,4,5,6];
+        let vec = GPUVec::from_iter(&dev, &v);
+        let copy = vec.clone();
+
+        assert!(copy[0] == 0);
+        assert!(copy[1] == 1);
+        assert!(copy[2] == 2);
+        assert!(copy[3] == 3);
+        assert!(copy[4] == 4);
+        assert!(copy[5] == 5);
+        assert!(copy[6] == 6);
     }
 }
 
