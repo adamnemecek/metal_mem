@@ -281,12 +281,12 @@ impl<T: Copy> GPUVec<T> {
     //     // the hole, and the vector length is restored to the new length.
     //     //
     //     let len = self.len();
-    //     let start = match range.start_bound() {
+    //     let start = match range.start {
     //         Included(&n) => n,
     //         Excluded(&n) => n + 1,
     //         Unbounded => 0,
     //     };
-    //     let end = match range.end_bound() {
+    //     let end = match range.end {
     //         Included(&n) => n + 1,
     //         Excluded(&n) => n,
     //         Unbounded => len,
@@ -309,114 +309,117 @@ impl<T: Copy> GPUVec<T> {
     //     }
     // }
 
-    pub fn replace_subrange<I>(
-        &mut self,
-        subrange: std::ops::Range<usize>,
-        replace_with: I
-    ) //-> Splice<<I as IntoIterator>::IntoIter>
-    where
-        I: IntoIterator<Item = T>,
-        {
+    // pub fn replace_subrange<I>(
+    //     &mut self,
+    //     subrange: std::ops::Range<usize>,
+    //     replace_with: I
+    // ) //-> Splice<<I as IntoIterator>::IntoIter>
+    // where
+    //     I: IntoIterator<Item = T>,
+    //     // R: std::ops::RangeBounds<usize>,
+    //     {
+    //     use std::ops::RangeBounds;
+        
 
-        unsafe {
-            let mut new_elements_vec: Vec<T> = replace_with.into_iter().collect();
-            let new_len = new_elements_vec.len();
-            let new_elements = new_elements_vec.as_mut_ptr();
+    //     unsafe {
+    //         let mut new_elements_vec: Vec<T> = replace_with.into_iter().collect();
+    //         let new_len = new_elements_vec.len();
+    //         let new_elements = new_elements_vec.as_mut_ptr();
 
-            let old_len = self.len();
-            let erase_count = subrange.len();
+    //         let old_len = self.len();
+    //         let erase_count = subrange.len();
 
-            let growth = new_len - erase_count;
+    //         let growth = new_len - erase_count;
 
-            if growth > 0 {
-                self.reserve(growth);
-            }
-            else {
-                self.set_len(old_len + growth);
-            }
+    //         if growth > 0 {
+    //             self.reserve(growth);
+    //         }
+    //         else {
+    //             self.set_len(old_len + growth);
+    //         }
 
-            let elements = self.as_mut_ptr();
-            let old_tail_index = subrange.end;
-            let mut old_tail_start = &elements.offset(old_tail_index as isize);
-            let new_tail_index = old_tail_index + growth;
-            let mut new_tail_start = old_tail_start.offset(growth as isize);
-            let tail_count = old_len - subrange.end;
+    //         let elements = self.as_mut_ptr();
+    //         let old_tail_index = subrange.end;
+    //         let mut old_tail_start = &elements.offset(old_tail_index as isize);
+    //         let new_tail_index = old_tail_index + growth;
+    //         let mut new_tail_start = old_tail_start.offset(growth as isize);
+    //         let tail_count = old_len - subrange.end;
 
-            if growth > 0 {
-                // Slide the tail part of the buffer forwards, in reverse order
-                // so as not to self-clobber.
-                // newTailStart.moveInitialize(from: oldTailStart, count: tailCount)
-                std::ptr::copy(
-                    old_tail_start,
-                    &mut new_tail_start,
-                    tail_count
-                );
+    //         if growth > 0 {
+    //             // Slide the tail part of the buffer forwards, in reverse order
+    //             // so as not to self-clobber.
+    //             // newTailStart.moveInitialize(from: oldTailStart, count: tailCount)
+    //             std::ptr::copy(
+    //                 old_tail_start,
+    //                 &mut new_tail_start,
+    //                 tail_count
+    //             );
 
-                // Assign over the original subrange
-                let mut i = 0;
-                for j in subrange {
-                    *elements.offset(j as isize) = new_elements_vec[i];
-                    i += 1;
-                }
-                // Initialize the hole left by sliding the tail forward
-                for j in old_tail_index..new_tail_index {
-                    *elements.offset(j as isize) = new_elements_vec[i];
-                    i += 1;
-                }
-            }
-            else { // We're not growing the buffer
-                // Assign all the new elements into the start of the subrange
-                let mut i = subrange.start;
-                let j = 0; // todo
-                let mut j = 0;
-                for _ in 0..new_len {
-                    *elements.offset(i as isize) = new_elements_vec[j];
-                    i += 1;
-                    j += 1;
-                }
+    //             // Assign over the original subrange
+    //             let mut i = 0;
+    //             for j in subrange {
+    //                 *elements.offset(j as isize) = new_elements_vec[i];
+    //                 i += 1;
+    //             }
+    //             // Initialize the hole left by sliding the tail forward
+    //             for j in old_tail_index..new_tail_index {
+    //                 *elements.offset(j as isize) = new_elements_vec[i];
+    //                 i += 1;
+    //             }
+    //         }
+    //         else { // We're not growing the buffer
+    //             // Assign all the new elements into the start of the subrange
+    //             let mut i = subrange.start;
+    //             let j = 0; // todo
+    //             let mut j = 0;
+    //             for _ in 0..new_len {
+    //                 *elements.offset(i as isize) = new_elements_vec[j];
+    //                 i += 1;
+    //                 j += 1;
+    //             }
 
-                // If the size didn't change, we're done.
-                if growth == 0 {
-                    return;
-                }
+    //             // If the size didn't change, we're done.
+    //             if growth == 0 {
+    //                 return;
+    //             }
 
-                // Move the tail backward to cover the shrinkage.
-                let shrinkage = -(growth as isize);
-                if tail_count as isize > shrinkage {   // If the tail length exceeds the shrinkage
-                    // Assign over the rest of the replaced range with the first
-                    // part of the tail.
-                    // newTailStart.moveAssign(from: oldTailStart, count: shrinkage)
-                    std::ptr::copy(
-                        old_tail_start,
-                        &mut new_tail_start,
-                        shrinkage as usize
-                    );
+    //             // Move the tail backward to cover the shrinkage.
+    //             let shrinkage = -(growth as isize);
+    //             if tail_count as isize > shrinkage {   // If the tail length exceeds the shrinkage
+    //                 // Assign over the rest of the replaced range with the first
+    //                 // part of the tail.
+    //                 // newTailStart.moveAssign(from: oldTailStart, count: shrinkage)
+    //                 std::ptr::copy(
+    //                     old_tail_start,
+    //                     &mut new_tail_start,
+    //                     shrinkage as usize
+    //                 );
 
-                    // Slide the rest of the tail back
-                    // oldTailStart.moveInitialize(
-                        // from: oldTailStart + shrinkage, count: tailCount - shrinkage)
-                    std::ptr::copy(
-                        old_tail_start.offset(shrinkage),
-                        *old_tail_start,
-                        tail_count - shrinkage as usize
-                    );
-                }
-                else {                      // Tail fits within erased elements
-                    // Assign over the start of the replaced range with the tail
-                    // newTailStart.moveAssign(from: oldTailStart, count: tailCount)
+    //                 // Slide the rest of the tail back
+    //                 // oldTailStart.moveInitialize(
+    //                     // from: oldTailStart + shrinkage, count: tailCount - shrinkage)
+    //                 std::ptr::copy(
+    //                     old_tail_start.offset(shrinkage),
+    //                     *old_tail_start,
+    //                     tail_count - shrinkage as usize
+    //                 );
+    //             }
+    //             else {                      // Tail fits within erased elements
+    //                 // Assign over the start of the replaced range with the tail
+    //                 // newTailStart.moveAssign(from: oldTailStart, count: tailCount)
 
-                    std::ptr::copy(
-                        old_tail_start,
-                        &mut new_tail_start,
-                        tail_count
-                    );
-                    // Destroy elements remaining after the tail in subrange
-                    // (newTailStart + tailCount).deinitialize(
-                        // count: shrinkage - tailCount)
-                }
-            }
-        }
-    }
+    //                 std::ptr::copy(
+    //                     old_tail_start,
+    //                     &mut new_tail_start,
+    //                     tail_count
+    //                 );
+    //                 // Destroy elements remaining after the tail in subrange
+    //                 // (newTailStart + tailCount).deinitialize(
+    //                     // count: shrinkage - tailCount)
+    //             }
+    //         }
+    //     }
+    // }
 
     // in elements, not bytes.
     #[inline]
@@ -734,6 +737,34 @@ impl<'a, T: Copy> ExactSizeIterator for Iter<'a, T> {
 
 // use core::iter::{self, Extend, FromIterator, FusedIterator};
 impl<'a, T: Copy> std::iter::FusedIterator for Iter<'a, T> {}
+
+pub struct IntoIter<'a, T: Copy> {
+    inner: &'a GPUVec<T>,
+    idx: usize
+}
+
+impl<'a, T: Copy> GPUVec<T> {
+    fn into_iter(self) -> IntoIter<'a, T> {
+        Self {
+            inner: &self,
+            idx: 0
+        }
+    }
+}
+
+impl<'a, T: Copy> Iterator for IntoIter<'a, T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.idx >= self.inner.len() {
+            None
+        }
+        else {
+            let ret = self.inner[self.idx];
+            self.idx += 1;
+            Some(ret)
+        }
+    }
+}
 
 // #[derive(Debug)]
 pub struct IterMut<'a, T: Copy> {
@@ -1061,40 +1092,43 @@ mod tests {
         assert!(b != c);
     }
 
-    #[test]
-    fn test_replace_subrange() {
-        let dev = metal::Device::system_default().unwrap();
-        let a: Vec<usize> = vec![0,1,2,3,4,5,6];
+    // #[test]
+    // fn test_replace_subrange() {
+    //     let dev = metal::Device::system_default().unwrap();
+    //     let a: Vec<usize> = vec![0,1,2,3,4,5,6];
 
-        let mut vec = GPUVec::from_iter(&dev, &a);
-
-
-        /// same size
-        vec.replace_subrange(0..2, vec![10, 11]);
-
-        assert!(vec[0] == 10);
-        assert!(vec[1] == 11);
-        assert!(vec[2] == 2);
-
-        vec.replace_subrange(0..2, vec![10, 11, 12]);
-
-        println!("{}", vec);
-
-        assert!(vec[0] == 10);
-        assert!(vec[1] == 11);
-        assert!(vec[2] == 12);
-        assert!(vec[3] == 2);
+    //     let mut vec = GPUVec::from_iter(&dev, &a);
 
 
+    //     /// same size
+    //     vec.replace_subrange(0..2, vec![10, 11]);
 
-        // assert!(vec[3] == 6);
+    //     assert!(vec[0] == 10);
+    //     assert!(vec[1] == 11);
+    //     assert!(vec[2] == 2);
 
-        // let mut b = GPUVec::from_iter(&dev, &vb);
-        // let mut c = GPUVec::from_iter(&dev, &vc);
+    //     vec.replace_subrange(0..2, vec![10, 11, 12, 14, 15]);
 
-        // assert!(a == b);
-        // assert!(b != c);
-    }
+    //     println!("{}", vec);
+
+    //     assert!(vec[0] == 10);
+    //     assert!(vec[1] == 11);
+    //     assert!(vec[2] == 12);
+    //     assert!(vec[3] == 13);
+    //     assert!(vec[4] == 14);
+    //     assert!(vec[5] == 15);
+    //     assert!(vec[6] == 3);
+
+
+
+    //     // assert!(vec[3] == 6);
+
+    //     // let mut b = GPUVec::from_iter(&dev, &vb);
+    //     // let mut c = GPUVec::from_iter(&dev, &vc);
+
+    //     // assert!(a == b);
+    //     // assert!(b != c);
+    // }
 
     #[test]
     fn test_swap_remove() {
