@@ -443,21 +443,21 @@ impl<T: Copy> GPUVec<T> {
         // }
     }
 
-    pub fn iter(&self) -> Iter<T> {
-        todo!()
-        // Iter {
-        //     len: self.len,
-        //     inner: self.items.iter().enumerate(),
-        // }
-    }
+    // pub fn iter(&self) -> Iter<T> {
+    //     todo!()
+    //     // Iter {
+    //     //     len: self.len,
+    //     //     inner: self.items.iter().enumerate(),
+    //     // }
+    // }
 
-    pub fn iter_mut(&mut self) -> IterMut<T> {
-        todo!()
-        // IterMut {
-        //     len: self.len,
-        //     inner: self.items.iter_mut().enumerate(),
-        // }
-    }
+    // pub fn iter_mut(&mut self) -> IterMut<T> {
+    //     todo!()
+    //     // IterMut {
+    //     //     len: self.len,
+    //     //     inner: self.items.iter_mut().enumerate(),
+    //     // }
+    // }
 }
 
 impl<T : Copy> GPUVec<T> {
@@ -840,6 +840,25 @@ impl<T: Copy> Iterator for IntoIter<T> {
     }
 }
 
+impl<'a, T: Copy> IntoIterator for &'a GPUVec<T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    fn into_iter(self) -> std::slice::Iter<'a, T> {
+        self.as_slice().iter()
+    }
+}
+
+
+impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
+    type Item = &'a mut T;
+    type IntoIter = std::slice::IterMut<'a, T>;
+
+    fn into_iter(self) -> std::slice::IterMut<'a, T> {
+        self.as_mut_slice().iter_mut()
+    }
+}
+
 impl<T: Copy> DoubleEndedIterator for IntoIter<T> {
     fn next_back(&mut self) -> Option<T> {
         todo!()
@@ -876,40 +895,40 @@ impl<T: Copy> DoubleEndedIterator for IntoIter<T> {
 // unsafe impl<T> TrustedLen for IntoIter<T> {}
 
 // #[derive(Debug)]
-pub struct IterMut<'a, T: Copy> {
-    idx: usize,
-    inner: &'a mut GPUVec<T>
-}
+// pub struct IterMut<'a, T: Copy> {
+//     idx: usize,
+//     inner: &'a mut GPUVec<T>
+// }
 
-impl<'a, T: Copy> Iterator for IterMut<'a, T> {
-    type Item = &'a mut T;
+// impl<'a, T: Copy> Iterator for IterMut<'a, T> {
+//     type Item = &'a mut T;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        todo!()
-        // if self.idx >= self.inner.len() {
-        //     None
-        // }
-        // else {
-        //     // let mut ret = &mut self.inner[self.idx];
-        //     // self.idx += 1;
-        //     // Some(ret)
-        //     Some(&mut self.inner[self.idx])
-        // }
-    }
+//     fn next(&mut self) -> Option<Self::Item> {
+//         todo!()
+//         // if self.idx >= self.inner.len() {
+//         //     None
+//         // }
+//         // else {
+//         //     // let mut ret = &mut self.inner[self.idx];
+//         //     // self.idx += 1;
+//         //     // Some(ret)
+//         //     Some(&mut self.inner[self.idx])
+//         // }
+//     }
 
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let l = self.inner.len();
-        (l, Some(l))
-    }
-}
+//     fn size_hint(&self) -> (usize, Option<usize>) {
+//         let l = self.inner.len();
+//         (l, Some(l))
+//     }
+// }
 
-impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
-    type Item = &'a mut T;
-    type IntoIter = IterMut<'a, T>;
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter_mut()
-    }
-}
+// impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
+//     type Item = &'a mut T;
+//     type IntoIter = IterMut<'a, T>;
+//     fn into_iter(self) -> Self::IntoIter {
+//         self.iter_mut()
+//     }
+// }
 
 // impl<T> IntoIterator for Vec<T>
 // impl<'a, T> IntoIterator for &'a Vec<T>
@@ -1174,42 +1193,45 @@ mod tests {
 
     #[test]
     fn test_iter() {
-        // let v1 = vec![1, 2, 3];
-        // let mut v1_iter = v1.iter();
+        let dev = metal::Device::system_default().unwrap();
+        let v: Vec<usize> = vec![1,2,3];
+        let mut v1 = GPUVec::from_slice(&dev, &v);
+        let mut v1_iter = v1.iter();
 
-        // // iter() returns an iterator of slices.
-        // assert_eq!(v1_iter.next(), Some(&1));
-        // assert_eq!(v1_iter.next(), Some(&2));
-        // assert_eq!(v1_iter.next(), Some(&3));
-        // assert_eq!(v1_iter.next(), None);
+        // iter() returns an iterator of slices.
+        assert_eq!(v1_iter.next(), Some(&1));
+        assert_eq!(v1_iter.next(), Some(&2));
+        assert_eq!(v1_iter.next(), Some(&3));
+        assert_eq!(v1_iter.next(), None);
     }
 
     #[test]
     fn test_into_iter() {
-        // let v1 = vec![1, 2, 3];
-        // let mut v1_iter = v1.into_iter();
+        let dev = metal::Device::system_default().unwrap();
+        let v: Vec<usize> = vec![1,2,3];
+        let mut v1 = GPUVec::from_slice(&dev, &v);
+        let mut v1_iter = v1.into_iter();
 
-        // // into_iter() returns an iterator from a value.
-        // assert_eq!(v1_iter.next(), Some(1));
-        // assert_eq!(v1_iter.next(), Some(2));
-        // assert_eq!(v1_iter.next(), Some(3));
-        // assert_eq!(v1_iter.next(), None);
+        // into_iter() returns an iterator from a value.
+        assert_eq!(v1_iter.next(), Some(1));
+        assert_eq!(v1_iter.next(), Some(2));
+        assert_eq!(v1_iter.next(), Some(3));
+        assert_eq!(v1_iter.next(), None);
     }
 
     #[test]
     fn test_iter_mut() {
         let dev = metal::Device::system_default().unwrap();
-        let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-        let mut vec = GPUVec::from_slice(&dev, &v);
+        let v: Vec<usize> = vec![1,2,3];
+        let mut v1 = GPUVec::from_slice(&dev, &v);
 
-        // let mut v1 = vec![1, 2, 3];
-        // let mut v1_iter = v1.iter_mut();
+        let mut v1_iter = v1.iter_mut();
 
-        // // iter_mut() returns an iterator that allows modifying each value.
-        // assert_eq!(v1_iter.next(), Some(&mut 1));
-        // assert_eq!(v1_iter.next(), Some(&mut 2));
-        // assert_eq!(v1_iter.next(), Some(&mut 3));
-        // assert_eq!(v1_iter.next(), None);
+        // iter_mut() returns an iterator that allows modifying each value.
+        assert_eq!(v1_iter.next(), Some(&mut 1));
+        assert_eq!(v1_iter.next(), Some(&mut 2));
+        assert_eq!(v1_iter.next(), Some(&mut 3));
+        assert_eq!(v1_iter.next(), None);
     }
 
     #[test]
