@@ -8,3 +8,5 @@
 * [ ] truncate
 
 * [ ] deref makes vec behave like a slice
+* [ ] dedup dedupbykey
+* [ ] append

@@ -113,25 +113,23 @@ impl<T: Copy> GPUVec<T> {
         self.buffer = buffer;
         self.capacity = capacity;
     }
-    //
-    // returns an offset into the array that can accomodate n indices
-    //
-    //
-    // pub fn alloc(&mut self, n: usize) -> GPUAlloc<'a, T> {
-    //     self.resize(self.len() + n);
 
-    //     let offset = self.len();
+    pub fn extend_from_slice(&mut self, v: &[T]) {
+        let offset = self.len();
 
-    //     let slice = unsafe {
-    //         std::slice::from_raw_parts_mut(
-    //             self.as_mut_ptr().offset(offset as isize),
-    //             n
-    //         )
-    //     };
+        let new_len = self.len() + v.len();
 
-    //     self.len += n;
-    //     GPUAlloc::new(offset, slice)
-    // }
+        self.resize(new_len);
+
+        unsafe {
+            std::ptr::copy(
+                v.as_ptr(),
+                self.as_mut_ptr().offset(self.len() as isize),
+                v.len()
+            );
+        }
+        self.len = new_len;
+    }
 
     /// untested
     #[inline]
@@ -276,23 +274,6 @@ impl<T: Copy> GPUVec<T> {
     //     self.truncate(len);
     // }
 
-    pub fn extend_from_slice(&mut self, v: &[T]) {
-        let offset = self.len();
-
-        let new_len = self.len() + v.len();
-
-        self.resize(new_len);
-
-        unsafe {
-            std::ptr::copy(
-                v.as_ptr(),
-                self.as_mut_ptr().offset(self.len() as isize),
-                v.len()
-            );
-        }
-        self.len = new_len;
-    }
-
     /// Appends an element to the back of a collection.
     ///
     /// # Panics
@@ -394,7 +375,6 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
-
     #[inline]
     pub fn clear(&mut self) {
         unsafe {
@@ -428,7 +408,18 @@ impl<T: Copy> GPUVec<T> {
         other
     }
 
-
+    pub fn resize_with<F>(&mut self, new_len: usize, f: F)
+    where
+        F: FnMut() -> T,
+    {
+        todo!()
+        // let len = self.len();
+        // if new_len > len {
+        //     self.extend_with(new_len - len, ExtendFunc(f));
+        // } else {
+        //     self.truncate(new_len);
+        // }
+    }
 
     pub fn iter(&self) -> Iter<T> {
         todo!()
@@ -445,8 +436,6 @@ impl<T: Copy> GPUVec<T> {
         //     inner: self.items.iter_mut().enumerate(),
         // }
     }
-
-
 }
 
 impl<T : Copy> GPUVec<T> {
