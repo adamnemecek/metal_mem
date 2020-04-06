@@ -11,13 +11,13 @@
 use crate::{
     round_up,
     page_aligned,
+    GPUResource
 };
 
 use std::hash::{
     Hash,
     Hasher
 };
-
 
 use std::ops::{
     RangeBounds,
@@ -26,7 +26,6 @@ use std::ops::{
 
 use std::ptr::{NonNull};
 
-
 pub struct GPUVec<T: Copy> {
     device: metal::Device,
     buffer: metal::Buffer,
@@ -34,6 +33,29 @@ pub struct GPUVec<T: Copy> {
     capacity: usize,
     phantom: std::marker::PhantomData<T>
 }
+
+impl<T: Copy> GPUResource for GPUVec<T> {
+    type Device = metal::Device;
+    fn device(&self) -> &Self::Device {
+        &self.device
+    }
+
+    fn set_device(&mut self, device: &Self::Device) {
+        self.device = device.to_owned();
+    }
+}
+
+// impl<T: Copy> std::iter::FromIterator<T> for GPUVec<T> {
+//     #[inline]
+//     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> GPUVec<T> {
+//         // <Self as SpecExtend<T, I::IntoIter>>::from_iter(iter.into_iter())
+//         todo!()
+//     }
+// }
+
+// macro_rules! gpuvec {
+
+// }
 
 impl<T: Copy> GPUVec<T> {
     pub fn with_capacity(device: &metal::DeviceRef, capacity: usize) -> Self {
