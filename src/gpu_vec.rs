@@ -19,6 +19,12 @@ use std::hash::{
 };
 
 
+use std::ops::{
+    RangeBounds,
+    Bound::{Excluded, Included, Unbounded}
+};
+
+
 pub struct GPUVec<T: Copy> {
     device: metal::Device,
     buffer: metal::Buffer,
@@ -281,48 +287,71 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
-    // pub fn drain<R>(&mut self, range: R) -> Drain<'_, T>
-    // where
-    //     R: RangeBounds<usize>,
-    // {
-    //     // Memory safety
-    //     //
-    //     // When the Drain is first created, it shortens the length of
-    //     // the source vector to make sure no uninitialized or moved-from elements
-    //     // are accessible at all if the Drain's destructor never gets to run.
-    //     //
-    //     // Drain will ptr::read out the values to remove.
-    //     // When finished, remaining tail of the vec is copied back to cover
-    //     // the hole, and the vector length is restored to the new length.
-    //     //
-    //     let len = self.len();
-    //     let start = match range.start {
-    //         Included(&n) => n,
-    //         Excluded(&n) => n + 1,
-    //         Unbounded => 0,
-    //     };
-    //     let end = match range.end {
-    //         Included(&n) => n + 1,
-    //         Excluded(&n) => n,
-    //         Unbounded => len,
-    //     };
-    //     assert!(start <= end);
-    //     assert!(end <= len);
+    #[inline]
+    // #[stable(feature = "append", since = "1.4.0")]
+    pub fn append(&mut self, other: &mut Self) {
+        todo!()
+        // unsafe {
+        //     self.append_elements(other.as_slice() as _);
+        //     other.set_len(0);
+        // }
+    }
 
-    //     unsafe {
-    //         // set self.vec length's to start, to be safe in case Drain is leaked
-    //         self.set_len(start);
-    //         // Use the borrow in the IterMut to indicate borrowing behavior of the
-    //         // whole Drain iterator (like &mut T).
-    //         let range_slice = slice::from_raw_parts_mut(self.as_mut_ptr().add(start), end - start);
-    //         Drain {
-    //             tail_start: end,
-    //             tail_len: len - end,
-    //             iter: range_slice.iter(),
-    //             vec: NonNull::from(self),
-    //         }
-    //     }
-    // }
+    /// Appends elements to `Self` from other buffer.
+    #[inline]
+    unsafe fn append_elements(&mut self, other: *const [T]) {
+        todo!()
+        // let count = (*other).len();
+        // self.reserve(count);
+        // let len = self.len();
+        // ptr::copy_nonoverlapping(other as *const T, self.as_mut_ptr().add(len), count);
+        // self.len += count;
+    }
+
+    pub fn drain<R>(&mut self, range: R) -> Drain<'_, T>
+    where
+        R: RangeBounds<usize>,
+    {
+
+        // Memory safety
+        //
+        // When the Drain is first created, it shortens the length of
+        // the source vector to make sure no uninitialized or moved-from elements
+        // are accessible at all if the Drain's destructor never gets to run.
+        //
+        // Drain will ptr::read out the values to remove.
+        // When finished, remaining tail of the vec is copied back to cover
+        // the hole, and the vector length is restored to the new length.
+        //
+        let len = self.len();
+        let start = match range.start_bound() {
+            Included(&n) => n,
+            Excluded(&n) => n + 1,
+            Unbounded => 0,
+        };
+        let end = match range.end_bound() {
+            Included(&n) => n + 1,
+            Excluded(&n) => n,
+            Unbounded => len,
+        };
+        todo!()
+        // assert!(start <= end);
+        // assert!(end <= len);
+
+        // unsafe {
+        //     // set self.vec length's to start, to be safe in case Drain is leaked
+        //     self.set_len(start);
+        //     // Use the borrow in the IterMut to indicate borrowing behavior of the
+        //     // whole Drain iterator (like &mut T).
+        //     let range_slice = slice::from_raw_parts_mut(self.as_mut_ptr().add(start), end - start);
+        //     Drain {
+        //         tail_start: end,
+        //         tail_len: len - end,
+        //         iter: range_slice.iter(),
+        //         vec: NonNull::from(self),
+        //     }
+        // }
+    }
 
     // pub fn replace_subrange<I>(
     //     &mut self,
@@ -569,6 +598,7 @@ impl<T: Copy> Extend<T> for GPUVec<T> {
 impl<T: Copy + std::fmt::Display> std::fmt::Display for GPUVec<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         for i in 0..self.len() {
+            // debugtuple
             writeln!(f, "{}", self[i]);
         }
         Ok(())
@@ -603,6 +633,17 @@ impl<T: Copy> std::ops::DerefMut for GPUVec<T> {
 //         // todo!()
 //     }
 // }
+
+pub struct Drain<'a, T: Copy + 'a> {
+    /// Index of tail to preserve
+    // tail_start: usize,
+    // /// Length of tail
+    // tail_len: usize,
+    // /// Current remaining range to remove
+    // iter: slice::Iter<'a, T>,
+    // vec: NonNull<Vec<T>>,
+    inner: &'a GPUVec<T>
+}
 
 impl<T: Copy> Clone for GPUVec<T> {
     fn clone(&self) -> Self {
