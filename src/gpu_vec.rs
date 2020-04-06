@@ -24,6 +24,8 @@ use std::ops::{
     Bound::{Excluded, Included, Unbounded}
 };
 
+use std::ptr::{NonNull};
+
 
 pub struct GPUVec<T: Copy> {
     device: metal::Device,
@@ -63,6 +65,11 @@ impl<T: Copy> GPUVec<T> {
 
         ret.len = len;
         ret
+    }
+
+    #[inline]
+    pub fn capacity(&self) -> usize {
+        self.capacity
     }
 
     /// Reserves space for at least `addtional` more elements;
@@ -334,141 +341,57 @@ impl<T: Copy> GPUVec<T> {
             Excluded(&n) => n,
             Unbounded => len,
         };
-        todo!()
-        // assert!(start <= end);
-        // assert!(end <= len);
 
-        // unsafe {
-        //     // set self.vec length's to start, to be safe in case Drain is leaked
-        //     self.set_len(start);
-        //     // Use the borrow in the IterMut to indicate borrowing behavior of the
-        //     // whole Drain iterator (like &mut T).
-        //     let range_slice = slice::from_raw_parts_mut(self.as_mut_ptr().add(start), end - start);
-        //     Drain {
-        //         tail_start: end,
-        //         tail_len: len - end,
-        //         iter: range_slice.iter(),
-        //         vec: NonNull::from(self),
-        //     }
-        // }
+        assert!(start <= end);
+        assert!(end <= len);
+
+        unsafe {
+            // set self.vec length's to start, to be safe in case Drain is leaked
+            self.set_len(start);
+            // Use the borrow in the IterMut to indicate borrowing behavior of the
+            // whole Drain iterator (like &mut T).
+            let range_slice = std::slice::from_raw_parts_mut(self.as_mut_ptr().add(start), end - start);
+            Drain {
+                tail_start: end,
+                tail_len: len - end,
+                iter: range_slice.iter(),
+                vec: NonNull::from(self),
+            }
+        }
     }
 
-    // pub fn replace_subrange<I>(
-    //     &mut self,
-    //     subrange: std::ops::Range<usize>,
-    //     replace_with: I
-    // ) //-> Splice<<I as IntoIterator>::IntoIter>
-    // where
-    //     I: IntoIterator<Item = T>,
-    //     // R: std::ops::RangeBounds<usize>,
-    //     {
-    //     use std::ops::RangeBounds;
 
+    #[inline]
+    pub fn clear(&mut self) {
+        unsafe {
+            self.set_len(0)
+        }
+    }
 
-    //     unsafe {
-    //         let mut new_elements_vec: Vec<T> = replace_with.into_iter().collect();
-    //         let new_len = new_elements_vec.len();
-    //         let new_elements = new_elements_vec.as_mut_ptr();
-
-    //         let old_len = self.len();
-    //         let erase_count = subrange.len();
-
-    //         let growth = new_len - erase_count;
-
-    //         if growth > 0 {
-    //             self.reserve(growth);
-    //         }
-    //         else {
-    //             self.set_len(old_len + growth);
-    //         }
-
-    //         let elements = self.as_mut_ptr();
-    //         let old_tail_index = subrange.end;
-    //         let mut old_tail_start = &elements.offset(old_tail_index as isize);
-    //         let new_tail_index = old_tail_index + growth;
-    //         let mut new_tail_start = old_tail_start.offset(growth as isize);
-    //         let tail_count = old_len - subrange.end;
-
-    //         if growth > 0 {
-    //             // Slide the tail part of the buffer forwards, in reverse order
-    //             // so as not to self-clobber.
-    //             // newTailStart.moveInitialize(from: oldTailStart, count: tailCount)
-    //             std::ptr::copy(
-    //                 old_tail_start,
-    //                 &mut new_tail_start,
-    //                 tail_count
-    //             );
-
-    //             // Assign over the original subrange
-    //             let mut i = 0;
-    //             for j in subrange {
-    //                 *elements.offset(j as isize) = new_elements_vec[i];
-    //                 i += 1;
-    //             }
-    //             // Initialize the hole left by sliding the tail forward
-    //             for j in old_tail_index..new_tail_index {
-    //                 *elements.offset(j as isize) = new_elements_vec[i];
-    //                 i += 1;
-    //             }
-    //         }
-    //         else { // We're not growing the buffer
-    //             // Assign all the new elements into the start of the subrange
-    //             let mut i = subrange.start;
-    //             let j = 0; // todo
-    //             let mut j = 0;
-    //             for _ in 0..new_len {
-    //                 *elements.offset(i as isize) = new_elements_vec[j];
-    //                 i += 1;
-    //                 j += 1;
-    //             }
-
-    //             // If the size didn't change, we're done.
-    //             if growth == 0 {
-    //                 return;
-    //             }
-
-    //             // Move the tail backward to cover the shrinkage.
-    //             let shrinkage = -(growth as isize);
-    //             if tail_count as isize > shrinkage {   // If the tail length exceeds the shrinkage
-    //                 // Assign over the rest of the replaced range with the first
-    //                 // part of the tail.
-    //                 // newTailStart.moveAssign(from: oldTailStart, count: shrinkage)
-    //                 std::ptr::copy(
-    //                     old_tail_start,
-    //                     &mut new_tail_start,
-    //                     shrinkage as usize
-    //                 );
-
-    //                 // Slide the rest of the tail back
-    //                 // oldTailStart.moveInitialize(
-    //                     // from: oldTailStart + shrinkage, count: tailCount - shrinkage)
-    //                 std::ptr::copy(
-    //                     old_tail_start.offset(shrinkage),
-    //                     *old_tail_start,
-    //                     tail_count - shrinkage as usize
-    //                 );
-    //             }
-    //             else {                      // Tail fits within erased elements
-    //                 // Assign over the start of the replaced range with the tail
-    //                 // newTailStart.moveAssign(from: oldTailStart, count: tailCount)
-
-    //                 std::ptr::copy(
-    //                     old_tail_start,
-    //                     &mut new_tail_start,
-    //                     tail_count
-    //                 );
-    //                 // Destroy elements remaining after the tail in subrange
-    //                 // (newTailStart + tailCount).deinitialize(
-    //                     // count: shrinkage - tailCount)
-    //             }
-    //         }
-    //     }
-    // }
-
-    // in elements, not bytes.
     #[inline]
     pub fn len(&self) -> usize {
         self.len
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
+    pub fn split_off(&mut self, at: usize) -> Self {
+        assert!(at <= self.len(), "`at` out of bounds");
+
+        let other_len = self.len - at;
+        let mut other = GPUVec::with_capacity(&self.device, other_len);
+
+        // Unsafely `set_len` and copy items to `other`.
+        unsafe {
+            self.set_len(at);
+            other.set_len(other_len);
+
+            std::ptr::copy_nonoverlapping(self.as_ptr().add(at), other.as_mut_ptr(), other.len());
+        }
+        other
     }
 
     #[inline]
@@ -489,43 +412,16 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.len == 0
-    }
-
-    #[inline]
-    pub fn capacity(&self) -> usize {
-        self.capacity
-    }
-
-    #[inline]
-    pub fn clear(&mut self) {
-        unsafe {
-            self.set_len(0)
-        }
-    }
-
     // untested
     #[inline]
     pub fn as_slice(&self) -> &[T] {
-        unsafe {
-            std::slice::from_raw_parts(
-                self.as_ptr(),
-                self.len()
-            )
-        }
+        self
     }
 
     // untested
     #[inline]
-    pub fn as_mut_slice(&self) -> &mut [T] {
-        unsafe {
-            std::slice::from_raw_parts_mut(
-                self.as_mut_ptr(),
-                self.len()
-            )
-        }
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        self
     }
 
     pub fn iter(&self) -> Iter<T> {
@@ -616,14 +512,24 @@ impl<T: Copy> std::ops::Deref for GPUVec<T> {
 
     #[inline]
     fn deref(&self) -> &[T] {
-        self.as_slice()
+        unsafe {
+            std::slice::from_raw_parts(
+                self.as_ptr(),
+                self.len()
+            )
+        }
     }
 }
 
 impl<T: Copy> std::ops::DerefMut for GPUVec<T> {
     #[inline]
     fn deref_mut(&mut self) -> &mut [T] {
-        self.as_mut_slice()
+        unsafe {
+            std::slice::from_raw_parts_mut(
+                self.as_mut_ptr(),
+                self.len()
+            )
+        }
     }
 }
 
@@ -634,15 +540,17 @@ impl<T: Copy> std::ops::DerefMut for GPUVec<T> {
 //     }
 // }
 
+
+
 pub struct Drain<'a, T: Copy + 'a> {
     /// Index of tail to preserve
-    // tail_start: usize,
-    // /// Length of tail
-    // tail_len: usize,
-    // /// Current remaining range to remove
-    // iter: slice::Iter<'a, T>,
-    // vec: NonNull<Vec<T>>,
-    inner: &'a GPUVec<T>
+    tail_start: usize,
+    /// Length of tail
+    tail_len: usize,
+    /// Current remaining range to remove
+    iter: std::slice::Iter<'a, T>,
+    vec: NonNull<GPUVec<T>>,
+    // inner: &'a GPUVec<T>
 }
 
 impl<T: Copy> Clone for GPUVec<T> {
