@@ -444,6 +444,23 @@ impl<T: Copy> GPUVec<T> {
     //     //     inner: self.items.iter_mut().enumerate(),
     //     // }
     // }
+    // fn needs_to_grow(&self, used_capacity: usize, needed_extra_capacity: usize) -> bool {
+    //     needed_extra_capacity > self.capacity().wrapping_sub(used_capacity)
+    // }
+
+    // fn grow(&mut self, used_capacity: usize, needed_extra_capacity: usize) {
+    //     let required_cap = used_capacity.checked_add(needed_extra_capacity);
+    //     // Cannot overflow, because `cap <= isize::MAX`, and type of `cap` is `usize`.
+    //     let double_cap = self.cap * 2;
+    //     // `double_cap` guarantees exponential growth.
+    //     let cap = cmp::max(double_cap, required_cap);
+    // }
+
+    // fn try_reserve(&mut self, used_capacity: usize, needed_extra_capacity: usize) {
+    //     if self.needs_to_grow(used_capacity, needed_extra_capacity) {
+    //         self.grow(used_capacity, needed_extra_capacity)
+    //     }
+    // }
 }
 
 impl<T : Copy> GPUVec<T> {
@@ -543,6 +560,9 @@ pub struct Drain<'a, T: Copy > {
     // inner: &'a GPUVec<T>
 }
 
+// #[feature("trusted_len")]
+// unsafe impl<T> TrustedLen for Drain<'_, T> {}
+
 impl<T: Copy> Iterator for Drain<'_, T> {
     type Item = T;
 
@@ -553,6 +573,28 @@ impl<T: Copy> Iterator for Drain<'_, T> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
+    }
+}
+
+impl<T: Copy> Drop for Drain<'_, T> {
+    fn drop(&mut self) {
+        // exhaust self first
+        self.for_each(drop);
+
+        if self.tail_len > 0 {
+            unsafe {
+                let source_vec = self.vec.as_mut();
+                // memmove back untouched tail, update to new length
+                let start = source_vec.len();
+                let tail = self.tail_start;
+                if tail != start {
+                    let src = source_vec.as_ptr().add(tail);
+                    let dst = source_vec.as_mut_ptr().add(start);
+                    std::ptr::copy(src, dst, self.tail_len);
+                }
+                source_vec.set_len(start + self.tail_len);
+            }
+        }
     }
 }
 
@@ -584,6 +626,87 @@ impl<I: Iterator> Iterator for Splice<'_, I> where I::Item : Copy {
 impl<I: Iterator> DoubleEndedIterator for Splice<'_, I> where I::Item : Copy {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.drain.next_back()
+    }
+}
+
+impl<I: Iterator> Drop for Splice<'_, I> where I::Item : Copy {
+    fn drop(&mut self) {
+        self.drain.by_ref().for_each(drop);
+
+        unsafe {
+            if self.drain.tail_len == 0 {
+                self.drain.vec.as_mut().extend(self.replace_with.by_ref());
+                return;
+            }
+
+            // First fill the range left by drain().
+            if !self.drain.fill(&mut self.replace_with) {
+                return;
+            }
+
+            // There may be more elements. Use the lower bound as an estimate.
+            // FIXME: Is the upper bound a better guess? Or something else?
+            let (lower_bound, _upper_bound) = self.replace_with.size_hint();
+            if lower_bound > 0 {
+                self.drain.move_tail(lower_bound);
+                if !self.drain.fill(&mut self.replace_with) {
+                    return;
+                }
+            }
+
+            // Collect any remaining elements.
+            // This is a zero-length vector which does not allocate if `lower_bound` was exact.
+            let mut collected = self.replace_with.by_ref().collect::<Vec<I::Item>>().into_iter();
+            // Now we have an exact count.
+            if collected.len() > 0 {
+                self.drain.move_tail(collected.len());
+                let filled = self.drain.fill(&mut collected);
+                debug_assert!(filled);
+                debug_assert_eq!(collected.len(), 0);
+            }
+        }
+        // Let `Drain::drop` move the tail back if necessary and restore `vec.len`.
+    }
+}
+
+/// Private helper methods for `Splice::drop`
+impl<T: Copy> Drain<'_, T> {
+    /// The range from `self.vec.len` to `self.tail_start` contains elements
+    /// that have been moved out.
+    /// Fill that range as much as possible with new elements from the `replace_with` iterator.
+    /// Returns `true` if we filled the entire range. (`replace_with.next()` didn’t return `None`.)
+    unsafe fn fill<I: Iterator<Item = T>>(&mut self, replace_with: &mut I) -> bool {
+        let vec = self.vec.as_mut();
+        let range_start = vec.len;
+        let range_end = self.tail_start;
+        let range_slice =
+            std::slice::from_raw_parts_mut(vec.as_mut_ptr().add(range_start), range_end - range_start);
+
+        for place in range_slice {
+            if let Some(new_item) = replace_with.next() {
+                std::ptr::write(place, new_item);
+                vec.len += 1;
+            } else {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Makes room for inserting more elements before the tail.
+    unsafe fn move_tail(&mut self, extra_capacity: usize) {
+        let len = self.vec.as_ref().len();
+        let vec = self.vec.as_mut();
+        let used_capacity = self.tail_start + self.tail_len;
+        // vec.try_reserve(used_capacity, extra_capacity);
+        // vec.reserve(extra_capacity);
+        vec.reserve(len - extra_capacity);
+
+        let new_tail_start = self.tail_start + extra_capacity;
+        let src = vec.as_ptr().add(self.tail_start);
+        let dst = vec.as_mut_ptr().add(new_tail_start);
+        std::ptr::copy(src, dst, self.tail_len);
+        self.tail_start = new_tail_start;
     }
 }
 
@@ -1192,7 +1315,7 @@ mod tests {
         let new = [7, 8];
         let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
 
-        // println!("len: {}", v.len());
+        println!("len: {}", v[2]);
         assert!(v.iter().eq([7,8,3].iter()));
         assert!(u.iter().eq([1,2].iter()));
         // let expected = vec![7, 8, 3];
