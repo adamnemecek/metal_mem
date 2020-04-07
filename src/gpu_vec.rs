@@ -518,12 +518,6 @@ impl<T: Copy + std::fmt::Display> std::fmt::Display for GPUVec<T> {
     }
 }
 
-impl<T: Copy> Into<metal::Buffer> for GPUVec<T> {
-    fn into(self) -> metal::Buffer {
-        self.buffer
-    }
-}
-
 impl<T: Copy> std::ops::Deref for GPUVec<T> {
     type Target = [T];
 
@@ -549,15 +543,6 @@ impl<T: Copy> std::ops::DerefMut for GPUVec<T> {
         }
     }
 }
-
-// impl<'a, T: Copy> Into<&'a metal::BufferRef> for GPUVec<T> {
-//     fn into(self) -> &'a metal::BufferRef {
-//         self.buffer.as_ref()
-//         // todo!()
-//     }
-// }
-
-
 
 pub struct Drain<'a, T: Copy + 'a> {
     /// Index of tail to preserve
@@ -619,51 +604,33 @@ impl<T: Copy> GPUVec<T> {
 
 impl<T: Copy> Clone for GPUVec<T> {
     fn clone(&self) -> Self {
-        let byte_capacity = self.byte_capacity();
-        let buffer = self.device.new_buffer(
-            byte_capacity as u64,
-            metal::MTLResourceOptions::CPUCacheModeDefaultCache
-        );
+        // let byte_capacity = self.byte_capacity();
+        // let buffer = self.device.new_buffer(
+        //     byte_capacity as u64,
+        //     metal::MTLResourceOptions::CPUCacheModeDefaultCache
+        // );
 
-        unsafe {
-            std::ptr::copy(
-                self.as_ptr(),
-                buffer.contents() as *mut T,
-                self.len()
-            );
-        }
-        Self {
-            device: self.device.to_owned(),
-            buffer,
-            len: self.len(),
-            capacity: self.capacity(),
-            phantom: std::marker::PhantomData
-        }
+        // unsafe {
+        //     std::ptr::copy(
+        //         self.as_ptr(),
+        //         buffer.contents() as *mut T,
+        //         self.len()
+        //     );
+        // }
+        // Self {
+        //     device: self.device.to_owned(),
+        //     buffer,
+        //     len: self.len(),
+        //     capacity: self.capacity(),
+        //     phantom: std::marker::PhantomData
+        // }
+        Self::from_slice(&self.device, self.as_slice())
     }
 
     // fn clone_from(&mut self, other: &Vec<T>) {
     //     other.as_slice().clone_into(self);
     // }
 }
-
-// impl <'a> GPUVec<'a, nvg::renderer::Vertex> {
-//     fn extend_from_path()
-// }
-
-// impl<'a, T: Copy> IntoIterator for GPUVec<'a, T> {
-//     type Item = T;
-//     type IntoIter = GPUVecIterator<T>;
-//     fn into_iter(self) -> Self::IntoIter {
-//         todo!();
-//         // unsafe {
-//             // GPUVecIterator {
-//             //     ptr: self.as_ptr(),
-//             //     len: self.len(),
-//             //     index: 0,
-//             // }
-//         // }
-//     }
-// }
 
 impl<T: Copy> AsRef<metal::Buffer> for GPUVec<T> {
     #[inline]
@@ -809,8 +776,7 @@ pub struct IntoIter<T: Copy> {
 impl<T: Copy> IntoIterator for GPUVec<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
-    fn into_iter(self) -> IntoIter<T> {
-        // todo!()
+    fn into_iter(self) -> Self::IntoIter {
         IntoIter {
             inner: self,
             idx: 0
@@ -845,7 +811,7 @@ impl<'a, T: Copy> IntoIterator for &'a GPUVec<T> {
     type Item = &'a T;
     type IntoIter = std::slice::Iter<'a, T>;
 
-    fn into_iter(self) -> std::slice::Iter<'a, T> {
+    fn into_iter(self) -> Self::IntoIter {
         self.as_slice().iter()
     }
 }
@@ -855,7 +821,7 @@ impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
     type Item = &'a mut T;
     type IntoIter = std::slice::IterMut<'a, T>;
 
-    fn into_iter(self) -> std::slice::IterMut<'a, T> {
+    fn into_iter(self) ->  Self::IntoIter {
         self.as_mut_slice().iter_mut()
     }
 }
@@ -895,104 +861,14 @@ impl<T: Copy> DoubleEndedIterator for IntoIter<T> {
 
 // unsafe impl<T> TrustedLen for IntoIter<T> {}
 
-// #[derive(Debug)]
-// pub struct IterMut<'a, T: Copy> {
-//     idx: usize,
-//     inner: &'a mut GPUVec<T>
-// }
-
-// impl<'a, T: Copy> Iterator for IterMut<'a, T> {
-//     type Item = &'a mut T;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         todo!()
-//         // if self.idx >= self.inner.len() {
-//         //     None
-//         // }
-//         // else {
-//         //     // let mut ret = &mut self.inner[self.idx];
-//         //     // self.idx += 1;
-//         //     // Some(ret)
-//         //     Some(&mut self.inner[self.idx])
-//         // }
-//     }
-
-//     fn size_hint(&self) -> (usize, Option<usize>) {
-//         let l = self.inner.len();
-//         (l, Some(l))
-//     }
-// }
-
-// impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
-//     type Item = &'a mut T;
-//     type IntoIter = IterMut<'a, T>;
-//     fn into_iter(self) -> Self::IntoIter {
-//         self.iter_mut()
-//     }
-// }
-
-// impl<T> IntoIterator for Vec<T>
-// impl<'a, T> IntoIterator for &'a Vec<T>
-// impl<'a, T> IntoIterator for &'a mut Vec<T>
-
-
-
-// // impl<T: Copy> GPUVecIterator<T> {
-// //     pub fn new(vec: ) -> Self {
-// //         unsafe {
-// //             GPUVecIterator {
-// //                 ptr: self.as_ptr(),
-// //                 len: self.len(),
-// //                 index: 0,
-// //             }
-// //         }
-// //     }
-// // }
-
-// impl<T: Copy> Iterator for GPUVecIterator<T> {
-//     type Item = &T;
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if self.index < self.len {
-//             unsafe {
-//                 let ptr = self.ptr.offset(self.index as isize);
-//                 self.index += 1;
-//                 ptr
-//             }
-//         }
-//         else {
-//             None
-//         }
-//     }
-// }
-
-// // impl<'a, T: Copy> IntoIterator for GPUVec<'a, T> {
-// //     type Item = T;
-// //     type IntoIter = GPUVecIterator<T>;
-// //     fn into_iter(self) -> Self::IntoIter {
-// //         unsafe {
-// //             GPUVecIterator {
-// //                 ptr: self.as_ptr(),
-// //                 len: self.len(),
-// //                 index: 0,
-// //             }
-// //         }
-// //     }
-// // }
-
 unsafe impl<T: Copy> Send for GPUVec<T> { }
 unsafe impl<T: Copy> Sync for GPUVec<T> { }
 
-// impl<T: Copy> Drop for GPUVec<T> {
-//     fn drop(&mut self) {
-//         // println!("Dropping!");
-//     }
-// }
-
-// impl<T: Copy> Copy for GPUVec<T> {
-//     fn copy(&self) -> Self {
-//         todo!()
-//     }
-// }
+impl<T: Copy> Drop for GPUVec<T> {
+    fn drop(&mut self) {
+        self.buffer.set_purgeable_state(metal::MTLPurgeableState::Empty);
+    }
+}
 
 mod tests {
     use super::*;
@@ -1250,6 +1126,8 @@ mod tests {
         let dev = metal::Device::system_default().unwrap();
         let vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
         let copy = vec.clone();
+        assert!(vec.len() == copy.len());
+        assert!(vec.capacity() == copy.capacity());
 
         assert!(copy[0] == 0);
         assert!(copy[1] == 1);
