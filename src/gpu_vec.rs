@@ -45,18 +45,6 @@ impl<T: Copy> GPUResource for GPUVec<T> {
     }
 }
 
-// impl<T: Copy> std::iter::FromIterator<T> for GPUVec<T> {
-//     #[inline]
-//     fn from_slice<I: IntoIterator<Item = T>>(iter: I) -> GPUVec<T> {
-//         // <Self as SpecExtend<T, I::IntoIter>>::from_slice(iter.into_iter())
-//         todo!()
-//     }
-// }
-
-// macro_rules! gpuvec {
-
-// }
-
 impl<T: Copy> GPUVec<T> {
     pub fn with_capacity(device: &metal::DeviceRef, capacity: usize) -> Self {
         let byte_capacity = page_aligned(capacity * Self::element_size()) as u64;
@@ -165,13 +153,11 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
-    // untested
     #[inline]
     pub fn as_slice(&self) -> &[T] {
         self
     }
 
-    // untested
     #[inline]
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         self
@@ -418,7 +404,7 @@ impl<T: Copy> GPUVec<T> {
         assert!(at <= self.len(), "`at` out of bounds");
 
         let other_len = self.len - at;
-        let mut other = GPUVec::with_capacity(&self.device, other_len);
+        let mut other = Self::with_capacity(&self.device, other_len);
 
         // Unsafely `set_len` and copy items to `other`.
         unsafe {
@@ -933,31 +919,31 @@ mod tests {
         assert!(vec[6] == 8);
     }
 
-    // #[test]
-    // fn test_extend() {
-    //     let dev = metal::Device::system_default().unwrap();
-    //     let v = vec![0,1,2,3,4,5,6];
-    //     let mut vec = GPUVec::from_slice(&dev, &v);
-    //     vec.extend(v.iter());
+    #[test]
+    fn test_extend() {
+        let dev = metal::Device::system_default().unwrap();
+        let v = vec![0,1,2,3,4,5,6];
+        let mut vec = GPUVec::from_slice(&dev, &v);
+        vec.extend(v.into_iter());
 
-    //     assert!(vec.len() == 14);
+        assert!(vec.len() == 14);
 
-    //     assert!(vec[0] == 0);
-    //     assert!(vec[1] == 1);
-    //     assert!(vec[2] == 2);
-    //     assert!(vec[3] == 3);
-    //     assert!(vec[4] == 4);
-    //     assert!(vec[5] == 5);
-    //     assert!(vec[6] == 6);
+        assert!(vec[0] == 0);
+        assert!(vec[1] == 1);
+        assert!(vec[2] == 2);
+        assert!(vec[3] == 3);
+        assert!(vec[4] == 4);
+        assert!(vec[5] == 5);
+        assert!(vec[6] == 6);
 
-    //     assert!(vec[7] == 0);
-    //     assert!(vec[8] == 1);
-    //     assert!(vec[9] == 2);
-    //     assert!(vec[10] == 3);
-    //     assert!(vec[11] == 4);
-    //     assert!(vec[12] == 5);
-    //     assert!(vec[13] == 6);
-    // }
+        assert!(vec[7] == 0);
+        assert!(vec[8] == 1);
+        assert!(vec[9] == 2);
+        assert!(vec[10] == 3);
+        assert!(vec[11] == 4);
+        assert!(vec[12] == 5);
+        assert!(vec[13] == 6);
+    }
 
     #[test]
     fn test_extend_from_slice() {
@@ -966,7 +952,6 @@ mod tests {
         let mut vec = GPUVec::from_slice(&dev, &v);
 
         vec.extend_from_slice(&v);
-        // assert!(ret == v.len());
 
         assert!(vec.len() == 14);
 
@@ -1034,11 +1019,7 @@ mod tests {
         assert!(vec[0] == 0);
         assert!(vec[1] == 1);
         assert!(vec[2] == 2);
-        // assert!(vec[3] == 3);
-        // assert!(vec[3] == 3);
-        // assert!(vec[4] == 4);
-        // assert!(vec[5] == 5);
-        // assert!(vec[6] == 6);
+        assert!(vec.get(3) == None);
     }
 
     #[test]
@@ -1125,7 +1106,6 @@ mod tests {
         let dev = metal::Device::system_default().unwrap();
         let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
 
-        // let e: Vec<usize> = vec!;
         let expected = GPUVec::from_slice(&dev, &[0,1,2,6,4,5]);
 
         let res = vec.swap_remove(3);
@@ -1152,23 +1132,30 @@ mod tests {
     }
 
     #[test]
-    fn test_splice() {
+    fn test_drain() {
         let dev = metal::Device::system_default().unwrap();
-
-        let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
-
-        let new = [7, 8];
-        let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
-        let result: Vec<_> = v.into_iter().collect();
-        let expected = vec![7, 8, 3];
-        dbg!("{}", &result);
-        assert!(result == expected);
-
-
-        assert_eq!(u, &[1, 2]);
-
-
+        let mut v: GPUVec<u32> = GPUVec::from_slice(&dev, &[1, 2, 3]);
+        let u: Vec<_> = v.drain(1..).collect();
+        assert!(v.iter().eq([1].iter()));
+        assert!(u.iter().eq([2,3].iter()));
     }
+
+    // #[test]
+    // fn test_splice() {
+    //     let dev = metal::Device::system_default().unwrap();
+
+    //     let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
+
+    //     let new = [7, 8];
+    //     let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
+    //     let result: Vec<_> = v.into_iter().collect();
+    //     let expected = vec![7, 8, 3];
+    //     dbg!("{}", &result);
+    //     assert!(result == expected);
+
+
+    //     assert_eq!(u, &[1, 2]);
+    // }
 }
 
 
