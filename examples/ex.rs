@@ -1,39 +1,20 @@
 
 
-// use metalgear::GPUVec;
-
-// fn into_iter() {
-//     let dev = metal::Device::system_default().unwrap();
-//     let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-//     let mut vec = GPUVec::from_slice(&dev, &v);
-
-//     for e in vec.into_iter() {
-//         println!("{}", e);
-//     }
-// }
-
-// fn iter() {
-//     let dev = metal::Device::system_default().unwrap();
-//     let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-//     let mut vec = GPUVec::from_slice(&dev, &v);
-
-//     for e in vec.iter() {
-//         println!("{}", e);
-//     }
-// }
-
-// fn iter_mut() {
-//     let dev = metal::Device::system_default().unwrap();
-//     let v: Vec<usize> = vec![0,1,2,3,4,5,6];
-//     let mut vec = GPUVec::from_slice(&dev, &v);
-
-//     for e in vec.iter_mut() {
-//         println!("{}", e);
-//     }
-// }
+use metalgear::GPUVec;
+//
 
 fn main() {
-//     into_iter();
-//     iter();
-//     iter_mut();
+    let dev = metal::Device::system_default().unwrap();
+
+    let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
+
+    let new = [7, 8];
+    let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
+    let result: Vec<_> = v.iter().cloned().collect();
+    let expected = vec![7, 8, 3];
+
+    for e in result {
+        println!("{}", e);
+    }
+    println!("len {}", v.len());
 }

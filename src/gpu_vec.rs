@@ -607,6 +607,7 @@ impl<I: Iterator> Iterator for Splice<'_, I> where I::Item : Copy {
 // }
 
 impl<T: Copy> GPUVec<T> {
+    #[inline]
     pub fn splice<R, I>(&mut self, range: R, replace_with: I) -> Splice<'_, I::IntoIter>
     where
         R: RangeBounds<usize>,
@@ -1263,13 +1264,17 @@ mod tests {
     fn test_splice() {
         let dev = metal::Device::system_default().unwrap();
 
-        // let data = vec![1, 2, 3];
-        let v = GPUVec::from_slice(&dev, &[1, 2, 3]);
+        let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
+
         let new = [7, 8];
-        // let ur: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
-        // let u = GPUVec::from_slice(&dev, &data);
-        // assert!(v == [7, 8, 3]);
-        // assert!(u, &[1, 2]);
+        let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
+        let result: Vec<_> = v.into_iter().collect();
+        let expected = vec![7, 8, 3];
+        dbg!("{}", &result);
+        assert!(result == expected);
+
+
+        assert_eq!(u, &[1, 2]);
 
 
     }
