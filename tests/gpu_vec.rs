@@ -100,12 +100,7 @@ fn test_remove() {
     let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
     vec.remove(3);
 
-    assert!(vec[0] == 0);
-    assert!(vec[1] == 1);
-    assert!(vec[2] == 2);
-    assert!(vec[3] == 4);
-    assert!(vec[4] == 5);
-    assert!(vec[5] == 6);
+    assert!(vec[..] == [0,1,2,4,5,6][..]);
 }
 
 #[test]
@@ -155,10 +150,7 @@ fn test_retain() {
     vec.retain(|x| x % 2 == 0);
     assert!(vec.len() == 4);
 
-    assert!(vec[0] == 0);
-    assert!(vec[1] == 2);
-    assert!(vec[2] == 4);
-    assert!(vec[3] == 6);
+    assert!(vec[..] == [0,2,4,6][..]);
 }
 
 #[test]
@@ -203,13 +195,7 @@ fn test_clone() {
     assert!(vec.len() == copy.len());
     assert!(vec.capacity() == copy.capacity());
 
-    assert!(copy[0] == 0);
-    assert!(copy[1] == 1);
-    assert!(copy[2] == 2);
-    assert!(copy[3] == 3);
-    assert!(copy[4] == 4);
-    assert!(copy[5] == 5);
-    assert!(copy[6] == 6);
+    assert!(copy[..] == [0,1,2,3,4,5,6][..]);
     assert!(vec.as_ptr() != copy.as_ptr());
 }
 
