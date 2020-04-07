@@ -1143,18 +1143,19 @@ mod tests {
     // #[test]
     // fn test_splice() {
     //     let dev = metal::Device::system_default().unwrap();
-
     //     let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
 
     //     let new = [7, 8];
     //     let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
-    //     let result: Vec<_> = v.into_iter().collect();
-    //     let expected = vec![7, 8, 3];
-    //     dbg!("{}", &result);
-    //     assert!(result == expected);
+
+    //     assert!(v.iter().eq([7,8,3].iter()));
+    //     assert!(u.iter().eq([1,2].iter()));
+    //     // let expected = vec![7, 8, 3];
+    //     // dbg!("{}", &result);
+    //     // assert!(result == expected);
 
 
-    //     assert_eq!(u, &[1, 2]);
+    //     // assert_eq!(u, &[1, 2]);
     // }
 }
 
