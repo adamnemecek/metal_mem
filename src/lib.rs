@@ -1,8 +1,9 @@
-#![feature(core_intrinsics)]
-#![feature(ptr_offset_from)]
-#![feature(trusted_len)]
-#![feature(exact_size_is_empty)]
 #![feature(allocator_api)]
+#![feature(core_intrinsics)]
+#![feature(exact_size_is_empty)]
+#![feature(ptr_offset_from)]
+#![feature(slice_partition_dedup)]
+#![feature(trusted_len)]
 
 mod gpu_resource;
 mod gpu_var;

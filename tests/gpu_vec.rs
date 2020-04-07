@@ -323,6 +323,21 @@ fn test_splice() {
 //     assert_eq!(t2, &[2, 10]);
 // }
 
+// #[test]
+// fn test_splice2() {
+//     let dev = metal::Device::system_default().unwrap();
+//     let mut v = GPUVec::from_slice(&dev, &[1, 2, 3, 4, 5]);
+
+//     let a = [10, 11, 12];
+//     let u: Vec<_> = v.splice(2..4, a.iter().cloned()).collect();
+
+//     // assert!(v[..] == [7,8,3][..]);
+//     // assert!(u[..] == [1,2][..]);
+//     dbg!("{}", v.to_vec());
+//     assert!(v[..] == [1, 2, 10, 11, 12, 5, 6][..]);
+//     assert!(u[..] == [3,4][..]);
+// }
+
 #[test]
 fn test_splice_inclusive_range() {
     let dev = metal::Device::system_default().unwrap();

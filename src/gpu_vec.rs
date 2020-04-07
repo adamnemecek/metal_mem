@@ -153,12 +153,13 @@ impl<T: Copy> GPUVec<T> {
     /// untested
     #[inline]
     pub fn truncate(&mut self, len: usize) {
-        if len > self.len {
-            return;
-        }
-
         unsafe {
-            self.set_len(len)
+            if len > self.len {
+                return;
+            }
+            let s = self.get_unchecked_mut(len..) as *mut _;
+            self.len = len;
+            std::ptr::drop_in_place(s);
         }
     }
 
@@ -271,25 +272,25 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
-    // #[inline]
-    // pub fn dedup_by_key<F, K>(&mut self, mut key: F)
-    // where
-    //     F: FnMut(&mut T) -> K,
-    //     K: PartialEq,
-    // {
-    //     self.dedup_by(|a, b| key(a) == key(b))
-    // }
+    #[inline]
+    pub fn dedup_by_key<F, K>(&mut self, mut key: F)
+    where
+        F: FnMut(&mut T) -> K,
+        K: PartialEq,
+    {
+        self.dedup_by(|a, b| key(a) == key(b))
+    }
 
-    // pub fn dedup_by<F>(&mut self, same_bucket: F)
-    // where
-    //     F: FnMut(&mut T, &mut T) -> bool,
-    // {
-    //     let len = {
-    //         let (dedup, _) = self.as_mut_slice().partition_dedup_by(same_bucket);
-    //         dedup.len()
-    //     };
-    //     self.truncate(len);
-    // }
+    pub fn dedup_by<F>(&mut self, same_bucket: F)
+    where
+        F: FnMut(&mut T, &mut T) -> bool,
+    {
+        let len = {
+            let (dedup, _) = self.as_mut_slice().partition_dedup_by(same_bucket);
+            dedup.len()
+        };
+        self.truncate(len);
+    }
 
     /// Appends an element to the back of a collection.
     ///
@@ -400,7 +401,7 @@ impl<T: Copy> GPUVec<T> {
 
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.len == 0
+        self.len() == 0
     }
 
     pub fn split_off(&mut self, at: usize) -> Self {
@@ -423,30 +424,48 @@ impl<T: Copy> GPUVec<T> {
     where
         F: FnMut() -> T,
     {
-        todo!()
-        // let len = self.len();
-        // if new_len > len {
-        //     self.extend_with(new_len - len, ExtendFunc(f));
-        // } else {
-        //     self.truncate(new_len);
-        // }
+        let len = self.len();
+        if new_len > len {
+            self.extend_with(new_len - len, ExtendFunc(f));
+        } else {
+            self.truncate(new_len);
+        }
     }
 
-    // pub fn iter(&self) -> Iter<T> {
-    //     todo!()
-    //     // Iter {
-    //     //     len: self.len,
-    //     //     inner: self.items.iter().enumerate(),
-    //     // }
+    fn extend_with<E: ExtendWith<T>>(&mut self, n: usize, mut value: E) {
+        self.reserve(n);
+
+        unsafe {
+            let mut ptr = self.as_mut_ptr().add(self.len());
+            // Use SetLenOnDrop to work around bug where compiler
+            // may not realize the store through `ptr` through self.set_len()
+            // don't alias.
+            let mut local_len = SetLenOnDrop::new(&mut self.len);
+
+            // Write all elements except the last one
+            for _ in 1..n {
+                std::ptr::write(ptr, value.next());
+                ptr = ptr.offset(1);
+                // Increment the length in every step in case next() panics
+                local_len.increment_len(1);
+            }
+
+            if n > 0 {
+                // We can write the last element directly without cloning needlessly
+                std::ptr::write(ptr, value.last());
+                local_len.increment_len(1);
+            }
+
+            // len set by scope guard
+        }
+    }
+    // pub fn leak<'a>(vec: Self) -> &'a mut [T]
+    // where
+    //     T: 'a, // Technically not needed, but kept to be explicit.
+    // {
+    //     Box::leak(vec.into_boxed_slice())
     // }
 
-    // pub fn iter_mut(&mut self) -> IterMut<T> {
-    //     todo!()
-    //     // IterMut {
-    //     //     len: self.len,
-    //     //     inner: self.items.iter_mut().enumerate(),
-    //     // }
-    // }
     fn needs_to_grow(&self, used_capacity: usize, needed_extra_capacity: usize) -> bool {
         needed_extra_capacity > self.capacity().wrapping_sub(used_capacity)
     }
@@ -476,6 +495,86 @@ impl<T: Copy> GPUVec<T> {
         if self.needs_to_grow(used_capacity, needed_extra_capacity) {
             self.grow(used_capacity, needed_extra_capacity)
         }
+    }
+}
+
+trait ExtendWith<T> {
+    fn next(&mut self) -> T;
+    fn last(self) -> T;
+}
+
+struct ExtendElement<T>(T);
+impl<T: Clone> ExtendWith<T> for ExtendElement<T> {
+    fn next(&mut self) -> T {
+        self.0.clone()
+    }
+    fn last(self) -> T {
+        self.0
+    }
+}
+
+struct ExtendDefault;
+impl<T: Default> ExtendWith<T> for ExtendDefault {
+    fn next(&mut self) -> T {
+        Default::default()
+    }
+    fn last(self) -> T {
+        Default::default()
+    }
+}
+
+struct ExtendFunc<F>(F);
+impl<T, F: FnMut() -> T> ExtendWith<T> for ExtendFunc<F> {
+    fn next(&mut self) -> T {
+        (self.0)()
+    }
+    fn last(mut self) -> T {
+        (self.0)()
+    }
+}
+
+struct SetLenOnDrop<'a> {
+    len: &'a mut usize,
+    local_len: usize,
+}
+
+impl<'a> SetLenOnDrop<'a> {
+    #[inline]
+    fn new(len: &'a mut usize) -> Self {
+        SetLenOnDrop { local_len: *len, len: len }
+    }
+
+    #[inline]
+    fn increment_len(&mut self, increment: usize) {
+        self.local_len += increment;
+    }
+}
+
+impl Drop for SetLenOnDrop<'_> {
+    #[inline]
+    fn drop(&mut self) {
+        *self.len = self.local_len;
+    }
+}
+
+impl<T: PartialEq + Copy> GPUVec<T> {
+    /// Removes consecutive repeated elements in the vector according to the
+    /// [`PartialEq`] trait implementation.
+    ///
+    /// If the vector is sorted, this removes all duplicates.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut vec = vec![1, 2, 2, 3, 2];
+    ///
+    /// vec.dedup();
+    ///
+    /// assert_eq!(vec, [1, 2, 3, 2]);
+    /// ```
+    #[inline]
+    pub fn dedup(&mut self) {
+        self.dedup_by(|a, b| a == b)
     }
 }
 
