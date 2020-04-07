@@ -62,7 +62,6 @@ fn test_extend_from_slice() {
 #[test]
 fn test_push() {
     let dev = metal::Device::system_default().unwrap();
-
     let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
     assert!(vec.len() == 7);
 
@@ -87,10 +86,7 @@ fn test_truncate() {
     vec.truncate(3);
 
     assert!(vec.len() == 3);
-
-    assert!(vec[0] == 0);
-    assert!(vec[1] == 1);
-    assert!(vec[2] == 2);
+    assert!(vec[..] == [0,1,2][..]);
     assert!(vec.get(3) == None);
 }
 
@@ -106,7 +102,7 @@ fn test_remove() {
 #[test]
 fn test_iter() {
     let dev = metal::Device::system_default().unwrap();
-    let mut v1 = GPUVec::from_slice(&dev, &[1,2,3]);
+    let v1 = GPUVec::from_slice(&dev, &[1,2,3]);
     let mut v1_iter = v1.iter();
 
     // iter() returns an iterator of slices.
@@ -119,7 +115,7 @@ fn test_iter() {
 #[test]
 fn test_into_iter() {
     let dev = metal::Device::system_default().unwrap();
-    let mut v1 = GPUVec::from_slice(&dev, &[1,2,3]);
+    let v1 = GPUVec::from_slice(&dev, &[1,2,3]);
     let mut v1_iter = v1.into_iter();
 
     // into_iter() returns an iterator from a value.
@@ -157,9 +153,9 @@ fn test_retain() {
 fn test_eq() {
     let dev = metal::Device::system_default().unwrap();
 
-    let mut a = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
-    let mut b = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
-    let mut c = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,7]);
+    let a = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let b = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let c = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,7]);
 
     assert!(a == b);
     assert!(b != c);
@@ -170,12 +166,10 @@ fn test_swap_remove() {
     let dev = metal::Device::system_default().unwrap();
     let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
 
-    let expected = GPUVec::from_slice(&dev, &[0,1,2,6,4,5]);
-
     let res = vec.swap_remove(3);
 
     assert!(res == 3);
-    assert!(expected == vec);
+    assert!(vec[..] == [0,1,2,6,4,5][..]);
 }
 
 #[test]
@@ -208,27 +202,30 @@ fn test_drain() {
     assert!(u[..] == [2,3][..]);
 }
 
-// #[test]
-// fn test_drain_items() {
-//     let mut vec = vec![1, 2, 3];
-//     let mut vec2 = vec![];
-//     for i in vec.drain(..) {
-//         vec2.push(i);
-//     }
-//     assert_eq!(vec, []);
-//     assert_eq!(vec2, [1, 2, 3]);
-// }
+#[test]
+fn test_drain_items() {
+    let dev = metal::Device::system_default().unwrap();
+    let mut vec: GPUVec<u32> = GPUVec::from_slice(&dev, &[1, 2, 3]);
+    let mut vec2 = vec![];
+    for i in vec.drain(..) {
+        vec2.push(i);
+    }
+    assert!(vec.is_empty());
+    assert_eq!(vec2, [1, 2, 3]);
+}
 
-// #[test]
-// fn test_drain_items_reverse() {
-//     let mut vec = vec![1, 2, 3];
-//     let mut vec2 = vec![];
-//     for i in vec.drain(..).rev() {
-//         vec2.push(i);
-//     }
-//     assert_eq!(vec, []);
-//     assert_eq!(vec2, [3, 2, 1]);
-// }
+#[test]
+fn test_drain_items_reverse() {
+    let dev = metal::Device::system_default().unwrap();
+    let mut vec: GPUVec<u32> = GPUVec::from_slice(&dev, &[1, 2, 3]);
+
+    let mut vec2 = vec![];
+    for i in vec.drain(..).rev() {
+        vec2.push(i);
+    }
+    assert!(vec.is_empty());
+    assert_eq!(vec2, [3, 2, 1]);
+}
 
 // #[test]
 // fn test_drain_items_zero_sized() {

@@ -327,7 +327,6 @@ impl<T: Copy> GPUVec<T> {
     }
 
     #[inline]
-    // #[stable(feature = "append", since = "1.4.0")]
     pub fn append(&mut self, other: &mut Self) {
         unsafe {
             self.append_elements(other.as_slice() as _);

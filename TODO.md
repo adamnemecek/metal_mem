@@ -4,12 +4,12 @@
 * [x] fix iterators
 * [ ] drain
 
-* [ ] debug_tuple
+* [x] debug_tuple
 * [ ] truncate
 
 * [ ] deref makes vec behave like a slice
 * [ ] dedup dedupbykey
-* [ ] append
+* [x] append
 * [ ] in drain, what is T: Copy + 'a
-* [ ] doubleendediterator
+* [x] doubleendediterator
 * [ ] 
