@@ -7,7 +7,9 @@ use metalgear::GPUVec;
 fn main() {
     let dev = metal::Device::system_default().unwrap();
 
-    // let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
+    let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
+
+    dbg!("{}", v);
 
     // let new = [7, 8];
     // let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();

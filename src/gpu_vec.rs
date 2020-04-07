@@ -743,14 +743,11 @@ impl<'a, T: Copy> ExactSizeIterator for Iter<'a, T> {
     }
 }
 
-// impl<T: Copy + std::fmt::Debug> std::fmt::Debug for GPUVec<T> {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         for e in self.iter() {
-//             // write!(f, "{}", e)
-//         }
-//         Ok(())
-//     }
-// }
+impl<T: Copy + std::fmt::Debug> std::fmt::Debug for GPUVec<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&**self, f)
+    }
+}
 
 // use core::iter::{self, Extend, FromIterator, FusedIterator};
 impl<'a, T: Copy> std::iter::FusedIterator for Iter<'a, T> {}
@@ -781,6 +778,22 @@ impl<T: Copy> IntoIterator for GPUVec<T> {
             inner: self,
             idx: 0
         }
+    }
+}
+
+impl<T: Copy> IntoIter<T> {
+    pub fn as_slice(&self) -> &[T] {
+        self.inner.as_slice()
+    }
+
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        self.inner.as_mut_slice()
+    }
+}
+
+impl<T: Copy + std::fmt::Debug> std::fmt::Debug for IntoIter<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("IntoIter").field(&self.as_slice()).finish()
     }
 }
 
