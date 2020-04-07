@@ -69,6 +69,12 @@ impl<T: Copy> AsMut<metal::Buffer> for GPUVar<T> {
     }
 }
 
+impl<T: Copy> Clone for GPUVar<T> {
+    fn clone(&self) -> Self {
+        Self::new(&self.device, self.value())
+    }
+}
+
 mod tests {
     use crate::GPUVar;
     #[test]

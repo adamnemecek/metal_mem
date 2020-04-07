@@ -494,15 +494,17 @@ impl<T: Copy> Extend<T> for GPUVec<T> {
     }
 }
 
-impl<T: Copy + std::fmt::Display> std::fmt::Display for GPUVec<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        for i in 0..self.len() {
-            // debugtuple
-            writeln!(f, "{}", self[i]);
-        }
-        Ok(())
-    }
-}
+// impl<T: Copy + std::fmt::Display> std::fmt::Display for GPUVec<T> {
+//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+//         // std::fmt::Display::fmt(&**self, f)
+//         // fmt::Debug::fmt(&**self, f)
+//         // for i in 0..self.len() {
+//         //     // debugtuple
+//         //     writeln!(f, "{}", self[i]);
+//         // }
+//         // Ok(())
+//     }
+// }
 
 impl<T: Copy> std::ops::Deref for GPUVec<T> {
     type Target = [T];
@@ -530,7 +532,7 @@ impl<T: Copy> std::ops::DerefMut for GPUVec<T> {
     }
 }
 
-pub struct Drain<'a, T: Copy + 'a> {
+pub struct Drain<'a, T: Copy > {
     /// Index of tail to preserve
     tail_start: usize,
     /// Length of tail
@@ -554,7 +556,15 @@ impl<T: Copy> Iterator for Drain<'_, T> {
     }
 }
 
-pub struct Splice<'a, I: Iterator + 'a> where I::Item : Copy{
+impl<T: Copy> DoubleEndedIterator for Drain<'_, T> {
+    #[inline]
+    fn next_back(&mut self) -> Option<T> {
+        self.iter.next_back().map(|elt| unsafe { std::ptr::read(elt as *const _) })
+    }
+}
+
+
+pub struct Splice<'a, I: Iterator> where I::Item : Copy{
     drain: Drain<'a, I::Item>,
     replace_with: I,
 }
@@ -571,10 +581,31 @@ impl<I: Iterator> Iterator for Splice<'_, I> where I::Item : Copy {
     }
 }
 
-// impl<I: Iterator> DoubleEndedIterator for Splice<'_, I> where I::Item : Copy {
-//     fn next_back(&mut self) -> Option<Self::Item> {
-//         self.drain.next_back()
-//     }
+impl<I: Iterator> DoubleEndedIterator for Splice<'_, I> where I::Item : Copy {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.drain.next_back()
+    }
+}
+
+// pub struct DrainFilter<'a, T: Copy, F>
+// where
+//     F: FnMut(&mut T) -> bool,
+// {
+//     vec: &'a mut GPUVec<T>,
+//     /// The index of the item that will be inspected by the next call to `next`.
+//     idx: usize,
+//     /// The number of items that have been drained (removed) thus far.
+//     del: usize,
+//     /// The original length of `vec` prior to draining.
+//     old_len: usize,
+//     /// The filter test predicate.
+//     pred: F,
+//     /// A flag that indicates a panic has occurred in the filter test prodicate.
+//     /// This is used as a hint in the drop implmentation to prevent consumption
+//     /// of the remainder of the `DrainFilter`. Any unprocessed items will be
+//     /// backshifted in the `vec`, but no further items will be dropped or
+//     /// tested by the filter predicate.
+//     panic_flag: bool,
 // }
 
 impl<T: Copy> GPUVec<T> {
@@ -586,6 +617,20 @@ impl<T: Copy> GPUVec<T> {
     {
         Splice { drain: self.drain(range), replace_with: replace_with.into_iter() }
     }
+
+    // pub fn drain_filter<F>(&mut self, filter: F) -> DrainFilter<'_, T, F>
+    // where
+    //     F: FnMut(&mut T) -> bool,
+    // {
+    //     let old_len = self.len();
+
+    //     // Guard against us getting leaked (leak amplification)
+    //     unsafe {
+    //         self.set_len(0);
+    //     }
+
+    //     DrainFilter { vec: self, idx: 0, del: 0, old_len, pred: filter, panic_flag: false }
+    // }
 }
 
 impl<T: Copy> Clone for GPUVec<T> {
@@ -814,7 +859,6 @@ impl<'a, T: Copy> IntoIterator for &'a GPUVec<T> {
         self.as_slice().iter()
     }
 }
-
 
 impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
     type Item = &'a mut T;
@@ -1140,23 +1184,42 @@ mod tests {
         assert!(u.iter().eq([2,3].iter()));
     }
 
-    // #[test]
-    // fn test_splice() {
-    //     let dev = metal::Device::system_default().unwrap();
-    //     let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
+    #[test]
+    fn test_splice() {
+        let dev = metal::Device::system_default().unwrap();
+        let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
 
-    //     let new = [7, 8];
-    //     let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
+        let new = [7, 8];
+        let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
 
-    //     assert!(v.iter().eq([7,8,3].iter()));
-    //     assert!(u.iter().eq([1,2].iter()));
-    //     // let expected = vec![7, 8, 3];
-    //     // dbg!("{}", &result);
-    //     // assert!(result == expected);
+        // println!("len: {}", v.len());
+        assert!(v.iter().eq([7,8,3].iter()));
+        assert!(u.iter().eq([1,2].iter()));
+        // let expected = vec![7, 8, 3];
+        // dbg!("{}", &result);
+        // assert!(result == expected);
 
 
-    //     // assert_eq!(u, &[1, 2]);
-    // }
+        // assert_eq!(u, &[1, 2]);
+    }
+
+    #[test]
+    fn test_drain_filter() {
+        // let dev = metal::Device::system_default().unwrap();
+        // let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
+
+        // let new = [7, 8];
+        // let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
+
+        // assert!(v.iter().eq([7,8,3].iter()));
+        // assert!(u.iter().eq([1,2].iter()));
+        // // let expected = vec![7, 8, 3];
+        // // dbg!("{}", &result);
+        // // assert!(result == expected);
+
+
+        // // assert_eq!(u, &[1, 2]);
+    }
 }
 
 
