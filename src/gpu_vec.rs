@@ -892,6 +892,36 @@ impl<T: Copy> Drain<'_, T> {
 
 impl<T: Copy> GPUVec<T> {
     #[inline]
+    pub fn splice_slow<R, I>(&mut self, range: R, replace_with: I) -> Vec<T>
+    where
+        R: RangeBounds<usize>,
+        I: IntoIterator<Item = T>,
+    {
+        let start = match range.start_bound() {
+            Included(&n) => n,
+            Excluded(&n) => n + 1,
+            Unbounded => 0,
+        };
+        let end = match range.end_bound() {
+            Included(&n) => n + 1,
+            Excluded(&n) => n,
+            Unbounded => self.len,
+        };
+
+        let ret: Vec<_> = self[start..end].iter().cloned().collect();
+
+        let head: Vec<_> = self[..start].iter().cloned().collect();
+        let mid: Vec<_> = replace_with.into_iter().collect();
+        let tail: Vec<_> = self[end..].iter().cloned().collect();
+        self.clear();
+        self.extend_from_slice(&head);
+        self.extend_from_slice(&mid);
+        self.extend_from_slice(&tail);
+
+        ret
+    }
+
+    #[inline]
     pub fn splice<R, I>(&mut self, range: R, replace_with: I) -> Splice<'_, I::IntoIter>
     where
         R: RangeBounds<usize>,
