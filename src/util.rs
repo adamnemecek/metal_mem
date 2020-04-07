@@ -50,3 +50,16 @@ pub(crate) fn round_up(x: usize, to: usize) -> usize {
 pub(crate) fn page_aligned(size: usize) -> usize {
     round_up(size, 4096)
 }
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_roundup() {
+        assert!(round_up(1, 4096) == 4096);
+        assert!(round_up(4095, 4096) == 4096);
+        assert!(round_up(4096, 4096) == 4096);
+        assert!(round_up(4097, 4096) == 2 * 4096);
+        assert!(round_up(2 * 4096 + 1, 4096) == 3 * 4096);
+    }
+}
