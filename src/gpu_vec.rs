@@ -24,14 +24,18 @@ use std::ops::{
     Bound::{Excluded, Included, Unbounded}
 };
 
+use std::iter::{TrustedLen, FusedIterator};
+
 use std::ptr::{NonNull};
+
+use std::marker::PhantomData;
 
 pub struct GPUVec<T: Copy> {
     device: metal::Device,
     buffer: metal::Buffer,
     len: usize,
     capacity: usize,
-    phantom: std::marker::PhantomData<T>
+    phantom: PhantomData<T>
 }
 
 impl<T: Copy> GPUResource for GPUVec<T> {
@@ -57,7 +61,7 @@ impl<T: Copy> GPUVec<T> {
             buffer,
             len: 0,
             capacity,
-            phantom: std::marker::PhantomData
+            phantom: PhantomData
         }
     }
 
@@ -945,24 +949,35 @@ impl<'a, T: Copy> std::iter::FusedIterator for Iter<'a, T> {}
 //     idx: usize
 // }
 
+pub struct IntoIter<T: Copy> {
+    buf: NonNull<T>,
+    phantom: PhantomData<T>,
+    cap: usize,
+    ptr: *const T,
+    end: *const T,
+}
+
 impl<T: Copy> IntoIterator for GPUVec<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
     fn into_iter(self) -> Self::IntoIter {
-        IntoIter {
-            inner: self,
-            idx: 0
-        }
+        todo!()
+        // IntoIter {
+        //     inner: self,
+        //     idx: 0
+        // }
     }
 }
 
 impl<T: Copy> IntoIter<T> {
     pub fn as_slice(&self) -> &[T] {
-        self.inner.as_slice()
+        // self.inner.as_slice()
+        unsafe { std::slice::from_raw_parts(self.ptr, self.len()) }
     }
 
     pub fn as_mut_slice(&mut self) -> &mut [T] {
-        self.inner.as_mut_slice()
+        // self.inner.as_mut_slice()
+        unsafe { std::slice::from_raw_parts_mut(self.ptr as *mut T, self.len()) }
     }
 }
 
@@ -974,26 +989,106 @@ impl<T: Copy + std::fmt::Debug> std::fmt::Debug for IntoIter<T> {
 
 impl<T: Copy> Iterator for IntoIter<T> {
     type Item = T;
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.idx >= self.inner.len() {
-            None
-        }
-        else {
-            let result = self.inner[self.idx];
-            self.idx += 1;
-            Some(result)
+    // fn next(&mut self) -> Option<Self::Item> {
+    //     if self.idx >= self.inner.len() {
+    //         None
+    //     }
+    //     else {
+    //         let result = self.inner[self.idx];
+    //         self.idx += 1;
+    //         Some(result)
+    //     }
+    // }
+
+    // fn size_hint(&self) -> (usize, Option<usize>) {
+    //     let len = self.inner.len() - self.idx;
+    //     (len, Some(len))
+    // }
+
+    // fn count(self) -> usize {
+    //     self.inner.len()
+    // }
+
+    fn next(&mut self) -> Option<T> {
+        unsafe {
+            if self.ptr as *const _ == self.end {
+                None
+            } else {
+                if std::mem::size_of::<T>() == 0 {
+                    // purposefully don't use 'ptr.offset' because for
+                    // vectors with 0-size elements this would return the
+                    // same pointer.
+                    self.ptr = std::intrinsics::arith_offset(self.ptr as *const i8, 1) as *mut T;
+
+                    // Make up a value of this ZST.
+                    Some(std::mem::zeroed())
+                } else {
+                    let old = self.ptr;
+                    self.ptr = self.ptr.offset(1);
+
+                    Some(std::ptr::read(old))
+                }
+            }
         }
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.inner.len() - self.idx;
-        (len, Some(len))
+        let exact = if std::mem::size_of::<T>() == 0 {
+            (self.end as usize).wrapping_sub(self.ptr as usize)
+        } else {
+            unsafe { self.end.offset_from(self.ptr) as usize }
+        };
+        (exact, Some(exact))
     }
 
+    #[inline]
     fn count(self) -> usize {
-        self.inner.len()
+        self.len()
     }
 }
+
+impl<T: Copy> DoubleEndedIterator for IntoIter<T> {
+    #[inline]
+    fn next_back(&mut self) -> Option<T> {
+        unsafe {
+            if self.end == self.ptr {
+                None
+            } else {
+                if std::mem::size_of::<T>() == 0 {
+                    // See above for why 'ptr.offset' isn't used
+                    self.end = std::intrinsics::arith_offset(self.end as *const i8, -1) as *mut T;
+
+                    // Make up a value of this ZST.
+                    Some(std::mem::zeroed())
+                } else {
+                    self.end = self.end.offset(-1);
+
+                    Some(std::ptr::read(self.end))
+                }
+            }
+        }
+    }
+}
+
+impl<T: Copy> ExactSizeIterator for IntoIter<T> {
+    fn is_empty(&self) -> bool {
+        self.ptr == self.end
+    }
+}
+
+// #[stable(feature = "fused", since = "1.26.0")]
+// impl<T> FusedIterator for IntoIter<T> {}
+
+// #[unstable(feature = "trusted_len", issue = "37572")]
+unsafe impl<T: Copy> TrustedLen for IntoIter<T> {}
+
+// #[stable(feature = "vec_into_iter_clone", since = "1.8.0")]
+// impl<T: Clone> Clone for IntoIter<T> {
+//     fn clone(&self) -> IntoIter<T> {
+//         self.as_slice().to_owned().into_iter()
+//     }
+// }
 
 impl<'a, T: Copy> IntoIterator for &'a GPUVec<T> {
     type Item = &'a T;
@@ -1012,41 +1107,6 @@ impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
         self.as_mut_slice().iter_mut()
     }
 }
-
-impl<T: Copy> DoubleEndedIterator for IntoIter<T> {
-    fn next_back(&mut self) -> Option<T> {
-        todo!()
-        // unsafe {
-        //     if self.end == self.ptr {
-        //         None
-        //     } else {
-        //         if mem::size_of::<T>() == 0 {
-        //             // See above for why 'ptr.offset' isn't used
-        //             self.end = arith_offset(self.end as *const i8, -1) as *mut T;
-
-        //             // Make up a value of this ZST.
-        //             Some(mem::zeroed())
-        //         } else {
-        //             self.end = self.end.offset(-1);
-
-        //             Some(ptr::read(self.end))
-        //         }
-        //     }
-        // }
-    }
-}
-
-// #[feature(exact_size_is_empty)]
-// impl<T: Copy> ExactSizeIterator for IntoIter<T> {
-//     fn is_empty(&self) -> bool {
-//         // self.ptr == self.end
-//         todo!()
-//     }
-// }
-
-// impl<T> FusedIterator for IntoIter<T> {}
-
-// unsafe impl<T> TrustedLen for IntoIter<T> {}
 
 unsafe impl<T: Copy> Send for GPUVec<T> { }
 unsafe impl<T: Copy> Sync for GPUVec<T> { }
