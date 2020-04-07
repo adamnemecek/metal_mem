@@ -124,18 +124,19 @@ impl<T: Copy> GPUVec<T> {
         self.capacity = capacity;
     }
 
-    pub fn extend_from_slice(&mut self, v: &[T]) {
+    pub fn extend_from_slice(&mut self, other: &[T]) {
+
         let offset = self.len();
 
-        let new_len = self.len() + v.len();
+        let new_len = self.len() + other.len();
 
         self.resize(new_len);
 
         unsafe {
             std::ptr::copy(
-                v.as_ptr(),
+                other.as_ptr(),
                 self.as_mut_ptr().offset(self.len() as isize),
-                v.len()
+                other.len()
             );
         }
         self.len = new_len;
@@ -320,29 +321,26 @@ impl<T: Copy> GPUVec<T> {
     #[inline]
     // #[stable(feature = "append", since = "1.4.0")]
     pub fn append(&mut self, other: &mut Self) {
-        todo!()
-        // unsafe {
-        //     self.append_elements(other.as_slice() as _);
-        //     other.set_len(0);
-        // }
+        unsafe {
+            self.append_elements(other.as_slice() as _);
+            other.set_len(0);
+        }
     }
 
     /// Appends elements to `Self` from other buffer.
     #[inline]
     unsafe fn append_elements(&mut self, other: *const [T]) {
-        todo!()
-        // let count = (*other).len();
-        // self.reserve(count);
-        // let len = self.len();
-        // ptr::copy_nonoverlapping(other as *const T, self.as_mut_ptr().add(len), count);
-        // self.len += count;
+        let count = (*other).len();
+        self.reserve(count);
+        let len = self.len();
+        std::ptr::copy_nonoverlapping(other as *const T, self.as_mut_ptr().add(len), count);
+        self.len += count;
     }
 
     pub fn drain<R>(&mut self, range: R) -> Drain<'_, T>
     where
         R: RangeBounds<usize>,
     {
-
         // Memory safety
         //
         // When the Drain is first created, it shortens the length of
@@ -385,9 +383,7 @@ impl<T: Copy> GPUVec<T> {
 
     #[inline]
     pub fn clear(&mut self) {
-        unsafe {
-            self.set_len(0)
-        }
+        self.truncate(0)
     }
 
     #[inline]
@@ -485,22 +481,39 @@ impl<T : Copy> GPUVec<T> {
     }
 }
 
-impl<T: Copy> std::ops::Index<usize> for GPUVec<T> {
-    type Output = T;
-    fn index(&self, index: usize) -> &Self::Output {
-        assert!(index < self.len());
-        unsafe {
-            self.as_ptr().offset(index as isize).as_ref().unwrap()
-        }
+// impl<T: Copy> std::ops::Index<usize> for GPUVec<T> {
+//     type Output = T;
+//     fn index(&self, index: usize) -> &Self::Output {
+//         assert!(index < self.len());
+//         unsafe {
+//             self.as_ptr().offset(index as isize).as_ref().unwrap()
+//         }
+//     }
+// }
+
+// impl<T: Copy> std::ops::IndexMut<usize> for GPUVec<T> {
+//     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+//         assert!(index < self.len());
+//         unsafe {
+//             self.as_mut_ptr().offset(index as isize).as_mut().unwrap()
+//         }
+//     }
+// }
+
+impl<T: Copy, I: std::slice::SliceIndex<[T]>> std::ops::Index<I> for GPUVec<T> {
+    type Output = I::Output;
+
+    #[inline]
+    fn index(&self, index: I) -> &Self::Output {
+        std::ops::Index::index(&**self, index)
     }
 }
 
-impl<T: Copy> std::ops::IndexMut<usize> for GPUVec<T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        assert!(index < self.len());
-        unsafe {
-            self.as_mut_ptr().offset(index as isize).as_mut().unwrap()
-        }
+impl<T: Copy, I: std::slice::SliceIndex<[T]>> std::ops::IndexMut<I> for GPUVec<T> {
+
+    #[inline]
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        std::ops::IndexMut::index_mut(&mut **self, index)
     }
 }
 
@@ -802,19 +815,27 @@ impl<T: Copy> AsMut<metal::Buffer> for GPUVec<T> {
 
 /// untested
 impl<T: Copy + PartialEq> PartialEq for GPUVec<T> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
-        if self.len() != other.len() {
-            false
-        }
-        else {
-            for i in 0..self.len() {
-                if self[i] != other[i] {
-                    return false;
-                }
-            }
-            true
-        }
+        self[..] == other[..]
+        // if self.len() != other.len() {
+        //     false
+        // }
+        // else {
+        //     for i in 0..self.len() {
+        //         if self[i] != other[i] {
+        //             return false;
+        //         }
+        //     }
+        //     true
+        // }
     }
+
+    #[inline]
+    fn ne(&self, other: &Self) -> bool {
+        self[..] != other[..]
+    }
+
 }
 
 impl<T: Copy + Eq> Eq for GPUVec<T> { }
@@ -1282,6 +1303,15 @@ mod tests {
     }
 
     #[test]
+    fn test_clear() {
+        let dev = metal::Device::system_default().unwrap();
+        let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+        vec.clear();
+
+        assert!(vec.is_empty());
+    }
+
+    #[test]
     fn test_clone() {
         let dev = metal::Device::system_default().unwrap();
         let vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
@@ -1296,6 +1326,7 @@ mod tests {
         assert!(copy[4] == 4);
         assert!(copy[5] == 5);
         assert!(copy[6] == 6);
+        assert!(vec.as_ptr() != copy.as_ptr());
     }
 
     #[test]
@@ -1307,24 +1338,80 @@ mod tests {
         assert!(u.iter().eq([2,3].iter()));
     }
 
-    #[test]
-    fn test_splice() {
-        let dev = metal::Device::system_default().unwrap();
-        let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
+    // #[test]
+    // fn test_drain_items() {
+    //     let mut vec = vec![1, 2, 3];
+    //     let mut vec2 = vec![];
+    //     for i in vec.drain(..) {
+    //         vec2.push(i);
+    //     }
+    //     assert_eq!(vec, []);
+    //     assert_eq!(vec2, [1, 2, 3]);
+    // }
 
-        let new = [7, 8];
-        let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
+    // #[test]
+    // fn test_drain_items_reverse() {
+    //     let mut vec = vec![1, 2, 3];
+    //     let mut vec2 = vec![];
+    //     for i in vec.drain(..).rev() {
+    //         vec2.push(i);
+    //     }
+    //     assert_eq!(vec, []);
+    //     assert_eq!(vec2, [3, 2, 1]);
+    // }
 
-        println!("len: {}", v[2]);
-        assert!(v.iter().eq([7,8,3].iter()));
-        assert!(u.iter().eq([1,2].iter()));
-        // let expected = vec![7, 8, 3];
-        // dbg!("{}", &result);
-        // assert!(result == expected);
+    // #[test]
+    // fn test_drain_items_zero_sized() {
+    //     let mut vec = vec![(), (), ()];
+    //     let mut vec2 = vec![];
+    //     for i in vec.drain(..) {
+    //         vec2.push(i);
+    //     }
+    //     assert_eq!(vec, []);
+    //     assert_eq!(vec2, [(), (), ()]);
+    // }
 
+    // #[test]
+    // fn test_drain_range() {
+    //     let mut v = vec![1, 2, 3, 4, 5];
+    //     for _ in v.drain(4..) {}
+    //     assert_eq!(v, &[1, 2, 3, 4]);
 
-        // assert_eq!(u, &[1, 2]);
-    }
+    //     let mut v: Vec<_> = (1..6).map(|x| x.to_string()).collect();
+    //     for _ in v.drain(1..4) {}
+    //     assert_eq!(v, &[1.to_string(), 5.to_string()]);
+
+    //     let mut v: Vec<_> = (1..6).map(|x| x.to_string()).collect();
+    //     for _ in v.drain(1..4).rev() {}
+    //     assert_eq!(v, &[1.to_string(), 5.to_string()]);
+
+    //     let mut v: Vec<_> = vec![(); 5];
+    //     for _ in v.drain(1..4).rev() {}
+    //     assert_eq!(v, &[(), ()]);
+    // }
+
+    // #[test]
+    // fn test_drain_inclusive_range() {
+    //     let mut v = vec!['a', 'b', 'c', 'd', 'e'];
+    //     for _ in v.drain(1..=3) {}
+    //     assert_eq!(v, &['a', 'e']);
+
+    //     let mut v: Vec<_> = (0..=5).map(|x| x.to_string()).collect();
+    //     for _ in v.drain(1..=5) {}
+    //     assert_eq!(v, &["0".to_string()]);
+
+    //     let mut v: Vec<String> = (0..=5).map(|x| x.to_string()).collect();
+    //     for _ in v.drain(0..=5) {}
+    //     assert_eq!(v, Vec::<String>::new());
+
+    //     let mut v: Vec<_> = (0..=5).map(|x| x.to_string()).collect();
+    //     for _ in v.drain(0..=3) {}
+    //     assert_eq!(v, &["4".to_string(), "5".to_string()]);
+
+    //     let mut v: Vec<_> = (0..=1).map(|x| x.to_string()).collect();
+    //     for _ in v.drain(..=0) {}
+    //     assert_eq!(v, &["1".to_string()]);
+    // }
 
     #[test]
     fn test_drain_filter() {
@@ -1343,6 +1430,94 @@ mod tests {
 
         // // assert_eq!(u, &[1, 2]);
     }
+
+    /// taken from rustdoc test for splice
+    #[test]
+    fn test_splice() {
+        let dev = metal::Device::system_default().unwrap();
+        let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
+
+        let new = [7, 8];
+        let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
+
+        println!("len: {}", v[2]);
+        assert!(v.iter().eq([7,8,3].iter()));
+        assert!(u.iter().eq([1,2].iter()));
+    }
+
+    // #[test]
+    // fn test_splice_inclusive_range() {
+    //     let mut v = vec![1, 2, 3, 4, 5];
+    //     let a = [10, 11, 12];
+    //     let t1: Vec<_> = v.splice(2..=3, a.iter().cloned()).collect();
+    //     assert_eq!(v, &[1, 2, 10, 11, 12, 5]);
+    //     assert_eq!(t1, &[3, 4]);
+    //     let t2: Vec<_> = v.splice(1..=2, Some(20)).collect();
+    //     assert_eq!(v, &[1, 20, 11, 12, 5]);
+    //     assert_eq!(t2, &[2, 10]);
+    // }
+
+    #[test]
+    fn test_splice_inclusive_range() {
+        let dev = metal::Device::system_default().unwrap();
+        let mut v = GPUVec::from_slice(&dev, &[1, 2, 3, 4, 5]);
+        let a = [10, 11, 12];
+        let t1: Vec<_> = v.splice(2..=3, a.iter().cloned()).collect();
+        // dbg!("{}", v.iter().collect::<Vec<_>>());
+        // assert!(v.iter().eq([1, 2, 10, 11, 12, 5].iter()));
+
+        assert!(t1.iter().eq([3,4].iter()));
+
+        let t2: Vec<_> = v.splice(1..=2, Some(20)).collect();
+        assert!(v.iter().eq([1, 20, 11, 12, 5].iter()));
+        assert!(t2.iter().eq([2,10].iter()));
+    }
+
+
+
+    // #[test]
+    // #[should_panic]
+    // fn test_splice_out_of_bounds() {
+    //     let mut v = vec![1, 2, 3, 4, 5];
+    //     let a = [10, 11, 12];
+    //     v.splice(5..6, a.iter().cloned());
+    // }
+
+    // #[test]
+    // #[should_panic]
+    // fn test_splice_inclusive_out_of_bounds() {
+    //     let mut v = vec![1, 2, 3, 4, 5];
+    //     let a = [10, 11, 12];
+    //     v.splice(5..=5, a.iter().cloned());
+    // }
+
+    // #[test]
+    // fn test_splice_items_zero_sized() {
+    //     let mut vec = vec![(), (), ()];
+    //     let vec2 = vec![];
+    //     let t: Vec<_> = vec.splice(1..2, vec2.iter().cloned()).collect();
+    //     assert_eq!(vec, &[(), ()]);
+    //     assert_eq!(t, &[()]);
+    // }
+
+    #[test]
+    fn test_splice_unbounded() {
+        let dev = metal::Device::system_default().unwrap();
+        let mut vec = GPUVec::from_slice(&dev, &[1, 2, 3, 4, 5]);
+        let t: Vec<_> = vec.splice(.., None).collect();
+        assert!(vec.iter().eq([].iter()));
+        // assert_eq!(vec, &[]);
+        assert!(t.iter().eq([1, 2, 3, 4, 5].iter()));
+    }
+
+    // #[test]
+    // fn test_splice_forget() {
+    //     let mut v = vec![1, 2, 3, 4, 5];
+    //     let a = [10, 11, 12];
+    //     std::mem::forget(v.splice(2..4, a.iter().cloned()));
+    //     assert_eq!(v, &[1, 2]);
+    // }
+
 }
 
 

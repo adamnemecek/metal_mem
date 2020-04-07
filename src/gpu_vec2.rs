@@ -1,0 +1,4 @@
+
+pub struct GPUVec2 {
+    
+}
