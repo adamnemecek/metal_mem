@@ -921,14 +921,14 @@ impl<T: Copy> GPUVec<T> {
         ret
     }
 
-    #[inline]
-    pub fn splice<R, I>(&mut self, range: R, replace_with: I) -> Splice<'_, I::IntoIter>
-    where
-        R: RangeBounds<usize>,
-        I: IntoIterator<Item = T>,
-    {
-        Splice { drain: self.drain(range), replace_with: replace_with.into_iter() }
-    }
+    // #[inline]
+    // pub fn splice<R, I>(&mut self, range: R, replace_with: I) -> Splice<'_, I::IntoIter>
+    // where
+    //     R: RangeBounds<usize>,
+    //     I: IntoIterator<Item = T>,
+    // {
+    //     Splice { drain: self.drain(range), replace_with: replace_with.into_iter() }
+    // }
 
     // pub fn drain_filter<F>(&mut self, filter: F) -> DrainFilter<'_, T, F>
     // where

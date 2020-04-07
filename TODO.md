@@ -1,8 +1,10 @@
 # TODO
 
+* [ ] fix splice_slow
 * [ ] add trait implementations from https://doc.rust-lang.org/std/vec/struct.Vec.html
 * [x] fix iterators
 * [ ] drain
+* [ ] drain filter
 
 * [x] debug_tuple
 * [ ] truncate

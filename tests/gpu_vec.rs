@@ -305,7 +305,7 @@ fn test_splice() {
     let mut v = GPUVec::from_slice(&dev, &[1, 2, 3]);
 
     let new = [7, 8];
-    let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
+    let u: Vec<_> = v.splice_slow(..2, new.iter().cloned());
 
     assert!(v[..] == [7,8,3][..]);
     assert!(u[..] == [1,2][..]);
@@ -343,13 +343,13 @@ fn test_splice_inclusive_range() {
     let dev = metal::Device::system_default().unwrap();
     let mut v = GPUVec::from_slice(&dev, &[1, 2, 3, 4, 5, 6]);
     let a = [10, 11, 12];
-    let t1: Vec<_> = v.splice(2..=3, a.iter().cloned()).collect();
+    let t1: Vec<_> = v.splice_slow(2..=3, a.iter().cloned());
     dbg!("{}", v.to_vec());
 
     assert!(v[..] == [1, 2, 10, 11, 12, 5, 6][..]);
     assert!(t1[..] == [3,4][..]);
 
-    let t2: Vec<_> = v.splice(1..=2, Some(20)).collect();
+    let t2: Vec<_> = v.splice_slow(1..=2, Some(20));
     assert!(v[..] == [1, 20, 11, 12, 5, 6][..]);
     assert!(t2[..] == [2,10][..]);
 }
@@ -384,7 +384,7 @@ fn test_splice_inclusive_range() {
 fn test_splice_unbounded() {
     let dev = metal::Device::system_default().unwrap();
     let mut vec = GPUVec::from_slice(&dev, &[1, 2, 3, 4, 5]);
-    let t: Vec<_> = vec.splice(.., None).collect();
+    let t: Vec<_> = vec.splice_slow(.., None);
     assert!(vec[..]  == [][..]);
     assert!(t[..] == [1, 2, 3, 4, 5][..]);
 }
