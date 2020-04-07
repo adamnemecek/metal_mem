@@ -19,13 +19,7 @@ fn test_index() {
     let dev = metal::Device::system_default().unwrap();
     let vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
 
-    assert!(vec[0] == 0);
-    assert!(vec[1] == 1);
-    assert!(vec[2] == 2);
-    assert!(vec[3] == 3);
-    assert!(vec[4] == 4);
-    assert!(vec[5] == 5);
-    assert!(vec[6] == 6);
+    assert!(vec[..] == [0,1,2,3,4,5,6][..]);
 }
 
 #[test]
@@ -41,13 +35,7 @@ fn test_index_mut() {
     vec[5] = 8;
     vec[6] = 8;
 
-    assert!(vec[0] == 8);
-    assert!(vec[1] == 8);
-    assert!(vec[2] == 8);
-    assert!(vec[3] == 8);
-    assert!(vec[4] == 8);
-    assert!(vec[5] == 8);
-    assert!(vec[6] == 8);
+    assert!(vec[..] == [8,8,8,8,8,8,8][..]);
 }
 
 #[test]
@@ -57,23 +45,7 @@ fn test_extend() {
     let mut vec = GPUVec::from_slice(&dev, &v);
     vec.extend(v.into_iter());
 
-    assert!(vec.len() == 14);
-
-    assert!(vec[0] == 0);
-    assert!(vec[1] == 1);
-    assert!(vec[2] == 2);
-    assert!(vec[3] == 3);
-    assert!(vec[4] == 4);
-    assert!(vec[5] == 5);
-    assert!(vec[6] == 6);
-
-    assert!(vec[7] == 0);
-    assert!(vec[8] == 1);
-    assert!(vec[9] == 2);
-    assert!(vec[10] == 3);
-    assert!(vec[11] == 4);
-    assert!(vec[12] == 5);
-    assert!(vec[13] == 6);
+    assert!(vec[..] == [0,1,2,3,4,5,6,0,1,2,3,4,5,6][..]);
 }
 
 #[test]
@@ -84,23 +56,7 @@ fn test_extend_from_slice() {
 
     vec.extend_from_slice(&v);
 
-    assert!(vec.len() == 14);
-
-    assert!(vec[0] == 0);
-    assert!(vec[1] == 1);
-    assert!(vec[2] == 2);
-    assert!(vec[3] == 3);
-    assert!(vec[4] == 4);
-    assert!(vec[5] == 5);
-    assert!(vec[6] == 6);
-
-    assert!(vec[7] == 0);
-    assert!(vec[8] == 1);
-    assert!(vec[9] == 2);
-    assert!(vec[10] == 3);
-    assert!(vec[11] == 4);
-    assert!(vec[12] == 5);
-    assert!(vec[13] == 6);
+    assert!(vec[..] == [0,1,2,3,4,5,6,0,1,2,3,4,5,6][..]);
 }
 
 #[test]
@@ -112,16 +68,7 @@ fn test_push() {
 
     vec.push(7);
 
-    assert!(vec.len() == 8);
-
-    assert!(vec[0] == 0);
-    assert!(vec[1] == 1);
-    assert!(vec[2] == 2);
-    assert!(vec[3] == 3);
-    assert!(vec[4] == 4);
-    assert!(vec[5] == 5);
-    assert!(vec[6] == 6);
-    assert!(vec[7] == 7);
+    assert!(vec[..] == [0,1,2,3,4,5,6,7][..]);
 }
 
 #[test]
@@ -130,13 +77,7 @@ fn test_insert() {
     let mut vec = GPUVec::from_slice(&dev, &[0,1,2,4,5,6]);
     vec.insert(3, 3);
 
-    assert!(vec[0] == 0);
-    assert!(vec[1] == 1);
-    assert!(vec[2] == 2);
-    assert!(vec[3] == 3);
-    assert!(vec[4] == 4);
-    assert!(vec[5] == 5);
-    assert!(vec[6] == 6);
+    assert!(vec[..] == [0,1,2,3,4,5,6][..]);
 }
 
 #[test]
