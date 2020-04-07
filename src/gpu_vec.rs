@@ -321,9 +321,10 @@ impl<T: Copy> GPUVec<T> {
         if self.len == 0 {
             None
         } else {
-            let last = self[self.len()];
-            self.len -= 1;
-            Some(last)
+            unsafe {
+                self.len -= 1;
+                Some(std::ptr::read(self.get_unchecked(self.len())))
+            }
         }
     }
 
@@ -856,12 +857,9 @@ impl<T: Copy> Drain<'_, T> {
 
     /// Makes room for inserting more elements before the tail.
     unsafe fn move_tail(&mut self, extra_capacity: usize) {
-        let capacity = self.vec.as_ref().capacity();
         let vec = self.vec.as_mut();
         let used_capacity = self.tail_start + self.tail_len;
         vec.try_reserve(used_capacity, extra_capacity);
-        // vec.reserve(extra_capacity);
-        // vec.try_reserve(capacity - extra_capacity);
 
         let new_tail_start = self.tail_start + extra_capacity;
         let src = vec.as_ptr().add(self.tail_start);

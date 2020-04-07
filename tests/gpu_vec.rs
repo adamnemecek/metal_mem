@@ -399,3 +399,12 @@ fn test_splice_unbounded() {
 
 
 
+#[test]
+fn test_split_off() {
+
+}
+
+#[test]
+fn test_dedup() {
+    
+}

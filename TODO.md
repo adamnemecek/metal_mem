@@ -12,4 +12,4 @@
 * [x] append
 * [ ] in drain, what is T: Copy + 'a
 * [x] doubleendediterator
-* [ ] 
+* [ ] byte_capacity and capacity are mixed up because when we allocate whole pages but capacity is only
