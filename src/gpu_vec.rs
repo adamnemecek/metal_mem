@@ -940,10 +940,10 @@ impl<'a, T: Copy> std::iter::FusedIterator for Iter<'a, T> {}
 /// [`Vec`]: struct.Vec.html
 /// [`IntoIterator`]: ../../std/iter/trait.IntoIterator.html
 
-pub struct IntoIter<T: Copy> {
-    inner: GPUVec<T>,
-    idx: usize
-}
+// pub struct IntoIter<T: Copy> {
+//     inner: GPUVec<T>,
+//     idx: usize
+// }
 
 impl<T: Copy> IntoIterator for GPUVec<T> {
     type Item = T;
@@ -1334,8 +1334,8 @@ mod tests {
         let dev = metal::Device::system_default().unwrap();
         let mut v: GPUVec<u32> = GPUVec::from_slice(&dev, &[1, 2, 3]);
         let u: Vec<_> = v.drain(1..).collect();
-        assert!(v.iter().eq([1].iter()));
-        assert!(u.iter().eq([2,3].iter()));
+        assert!(v[..] == [1][..]);
+        assert!(u[..] == [2,3][..]);
     }
 
     // #[test]
@@ -1440,9 +1440,8 @@ mod tests {
         let new = [7, 8];
         let u: Vec<_> = v.splice(..2, new.iter().cloned()).collect();
 
-        println!("len: {}", v[2]);
-        assert!(v.iter().eq([7,8,3].iter()));
-        assert!(u.iter().eq([1,2].iter()));
+        assert!(v[..] == [7,8,3][..]);
+        assert!(u[..] == [1,2][..]);
     }
 
     // #[test]
@@ -1464,15 +1463,14 @@ mod tests {
         let a = [10, 11, 12];
         let t1: Vec<_> = v.splice(2..=3, a.iter().cloned()).collect();
         // dbg!("{}", v.iter().collect::<Vec<_>>());
-        // assert!(v.iter().eq([1, 2, 10, 11, 12, 5].iter()));
 
-        assert!(t1.iter().eq([3,4].iter()));
+        assert!(v[..] == [1, 2, 10, 11, 12, 5][..]);
+        assert!(t1[..] == [3,4][..]);
 
         let t2: Vec<_> = v.splice(1..=2, Some(20)).collect();
-        assert!(v.iter().eq([1, 20, 11, 12, 5].iter()));
-        assert!(t2.iter().eq([2,10].iter()));
+        assert!(v[..] == [1, 20, 11, 12, 5][..]);
+        assert!(t2[..] == [2,10][..]);
     }
-
 
 
     // #[test]
@@ -1505,9 +1503,8 @@ mod tests {
         let dev = metal::Device::system_default().unwrap();
         let mut vec = GPUVec::from_slice(&dev, &[1, 2, 3, 4, 5]);
         let t: Vec<_> = vec.splice(.., None).collect();
-        assert!(vec.iter().eq([].iter()));
-        // assert_eq!(vec, &[]);
-        assert!(t.iter().eq([1, 2, 3, 4, 5].iter()));
+        assert!(vec[..]  == [][..]);
+        assert!(t[..] == [1, 2, 3, 4, 5][..]);
     }
 
     // #[test]
