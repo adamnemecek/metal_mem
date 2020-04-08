@@ -11,6 +11,7 @@ mod gpu_vec;
 mod gpu_vec2;
 mod util;
 mod raw_vec;
+mod alloc_ref;
 
 pub use {
     gpu_resource::*,
@@ -19,4 +20,5 @@ pub use {
     gpu_vec2::*,
     util::*,
     raw_vec::*,
+    alloc_ref::*,
 };

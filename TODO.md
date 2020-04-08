@@ -1,6 +1,9 @@
 # TODO
 
 * [ ] fix splice_slow
+    * 
+* [ ] for v2, maybe i can just use allocref
+* [ ] create your own allocref trait
 * [ ] add trait implementations from https://doc.rust-lang.org/std/vec/struct.Vec.html
 * [x] fix iterators
 * [ ] drain
