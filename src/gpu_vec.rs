@@ -30,6 +30,32 @@ use std::ptr::{NonNull};
 
 use std::marker::PhantomData;
 
+// static mut DEVICE: metal::Device = metal::Device::system_default().unwrap();
+
+pub struct Device {
+    device: metal::Device
+}
+
+impl Device {
+    pub fn new(device: metal::Device) -> Self {
+        Self {
+            device: metal::Device::system_default().unwrap()
+        }
+    }
+}
+impl Default for Device {
+    fn default() -> Self {
+        todo!()
+    }
+}
+
+unsafe impl Send for Device { }
+unsafe impl Sync for Device { }
+
+lazy_static! {
+    static ref DEVICE: Device = Device::default();
+}
+
 pub struct GPUVec<T: Copy> {
     device: metal::Device,
     buffer: metal::Buffer,
@@ -50,8 +76,18 @@ impl<T: Copy> GPUResource for GPUVec<T> {
 }
 
 impl<T: Copy> GPUVec<T> {
+    pub fn new() -> Self {
+        let device = Device::default().device;
+        Self::with_capacity(&device, 1)
+    }
+
+    // pub fn set_device(device: Device) {
+    //     todo!()
+    // }
+
     pub fn with_capacity(device: &metal::DeviceRef, capacity: usize) -> Self {
         let byte_capacity = page_aligned(capacity * Self::element_size()) as u64;
+        assert!(byte_capacity != 0);
         let buffer = device.new_buffer(
             byte_capacity,
             metal::MTLResourceOptions::CPUCacheModeDefaultCache

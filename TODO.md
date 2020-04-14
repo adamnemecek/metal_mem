@@ -1,8 +1,12 @@
 # TODO
 
+* [ ] byte_capacity and capacity are mixed up because when we allocate whole pages but capacity is only
+    * [ ] use page pagedalloc
+    * [ ]
 * [ ] fix splice_slow
     * 
 * [ ] for v2, maybe i can just use allocref
+
 * [ ] create your own allocref trait
 * [ ] add trait implementations from https://doc.rust-lang.org/std/vec/struct.Vec.html
 * [x] fix iterators
@@ -17,4 +21,4 @@
 * [x] append
 * [ ] in drain, what is T: Copy + 'a
 * [x] doubleendediterator
-* [ ] byte_capacity and capacity are mixed up because when we allocate whole pages but capacity is only
+

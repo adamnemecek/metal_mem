@@ -1,6 +1,9 @@
 
 
-use metalgear::GPUVec;
+use metalgear::{
+    GPUVec,
+    round_up
+};
 
 //
 
@@ -34,7 +37,11 @@ use metalgear::GPUVec;
 //     // println!("{}", format!("{:p}", buffer2.contents()));
 // }
 
-fn main()  {
+struct TestStruct {
+    data: [u8; 16]
+}
+
+fn main1()  {
     let dev = metal::Device::system_default().unwrap();
     let mut v = GPUVec::from_slice(&dev, &[1, 2, 3, 4, 5, 6]);
     let a = [10, 11, 12];
@@ -47,4 +54,11 @@ fn main()  {
     let t2: Vec<_> = v.splice_slow(1..=2, Some(20));
     assert!(v[..] == [1, 20, 11, 12, 5, 6][..]);
     assert!(t2[..] == [2,10][..]);
+}
+
+fn main() {
+    // let roundup = round_up(0, 4096);
+    // println!("r: {}", roundup);
+    println!("{}", std::mem::size_of::<TestStruct>());
+    // println!("dsa");
 }

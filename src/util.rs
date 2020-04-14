@@ -37,7 +37,7 @@
 //     }
 // }
 
-// pub(crate) 
+// pub(crate)
 pub fn round_up(x: usize, to: usize) -> usize {
     let m = x % to;
     if m == 0 {
@@ -48,8 +48,31 @@ pub fn round_up(x: usize, to: usize) -> usize {
     }
 }
 
-// pub(crate) 
+// pub(crate)
 pub fn page_aligned(size: usize) -> usize {
     round_up(size, 4096)
 }
+
+#[derive(PartialEq, Eq)]
+pub struct PagedAlloc {
+    byte_size: usize,
+
+    element_size: usize,
+
+    count: usize,
+    remainder: usize
+}
+
+impl PagedAlloc {
+    pub fn validate(&self) -> bool {
+        todo!()
+    }
+
+    pub fn new(element_size: usize, count: usize, page_size: usize) -> Self {
+        todo!()
+    }
+}
+
+
+
 

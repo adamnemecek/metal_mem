@@ -22,3 +22,6 @@ pub use {
     raw_vec::*,
     alloc_ref::*,
 };
+
+#[macro_use]
+extern crate lazy_static;
