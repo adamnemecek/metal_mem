@@ -25,9 +25,7 @@ use std::ops::{
 };
 
 use std::iter::{TrustedLen, FusedIterator};
-
 use std::ptr::{NonNull};
-
 use std::marker::PhantomData;
 
 // static mut DEVICE: metal::Device = metal::Device::system_default().unwrap();
@@ -71,7 +69,7 @@ impl<T: Copy> GPUResource for GPUVec<T> {
     }
 
     fn set_device(&mut self, device: &Self::Device) {
-        self.device = device.to_owned();
+        self.devicdie = device.to_owned();
     }
 }
 
