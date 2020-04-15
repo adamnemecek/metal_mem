@@ -9,7 +9,8 @@
 ///
 
 use crate::{
-    round_up,
+    // round_up,
+    PagedAlloc,
     page_aligned,
     GPUResource
 };
@@ -84,6 +85,7 @@ impl<T: Copy> GPUVec<T> {
     // }
 
     pub fn with_capacity(device: &metal::DeviceRef, capacity: usize) -> Self {
+        let alloc = PagedAlloc::<T>::new(capacity);
         let byte_capacity = page_aligned(capacity * Self::element_size()) as u64;
         assert!(byte_capacity != 0);
         let buffer = device.new_buffer(

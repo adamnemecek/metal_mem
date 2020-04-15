@@ -53,23 +53,41 @@ pub fn page_aligned(size: usize) -> usize {
     round_up(size, 4096)
 }
 
-#[derive(PartialEq, Eq)]
-pub struct PagedAlloc {
-    byte_size: usize,
+/// Paged alloc represents how many elements a page-aligned allocation.
+///
+#[derive(PartialEq, Eq, Debug)]
+pub struct PagedAlloc<T> {
+    pub aligned_byte_size: usize,
 
-    element_size: usize,
-
-    count: usize,
-    remainder: usize
+    pub element_size: usize,
+    // how many elements does
+    pub capacity: usize,
+    pub remainder: usize,
+    phantom: std::marker::PhantomData<T>
 }
 
-impl PagedAlloc {
-    pub fn validate(&self) -> bool {
-        todo!()
+impl<T> PagedAlloc<T> {
+    pub fn is_valid(&self) -> bool {
+        (self.element_size * self.capacity) + self.remainder == self.byte_size
     }
 
-    pub fn new(element_size: usize, count: usize, page_size: usize) -> Self {
-        todo!()
+    pub fn new(capacity: usize) -> Self {
+        let element_size = std::mem::size_of::<T>();
+        let size = element_size * capacity;
+
+        let aligned_byte_size = page_aligned(size);
+        let remainder = aligned_byte_size % element_size;
+        assert!((aligned_byte_size - remainder) % element_size == 0);
+        let capacity = (aligned_byte_size - remainder) / element_size;
+
+
+        Self {
+            aligned_byte_size,
+            element_size,
+            capacity,
+            remainder,
+            phantom: Default::default()
+        }
     }
 }
 

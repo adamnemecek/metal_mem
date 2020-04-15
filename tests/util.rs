@@ -21,14 +21,17 @@ fn test_paged_alloc() {
 
     #[repr(C)]
     struct TestStruct {
-        data: [u8; 16]
+        data: [u8; 18]
     }
 
     let element_size: usize = std::mem::size_of::<TestStruct>();
+    assert!(element_size == 18);
     let count = 10;
-    let page_size = 4096;
-    let alloc = PagedAlloc::new(element_size, count, page_size);
+    // let page_size = 4096;
+    let alloc = PagedAlloc::new(element_size, count);
 
-    // assert!(element_size == 16);
-    println!("el_size: {}", element_size);
+    println!("{}", alloc.is_valid());
+
+    dbg!("{}", alloc);
+
 }
