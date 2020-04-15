@@ -58,9 +58,7 @@ pub fn page_aligned(size: usize) -> usize {
 #[derive(PartialEq, Eq, Debug)]
 pub struct PagedAlloc<T> {
     pub aligned_byte_size: usize,
-
     pub element_size: usize,
-    // how many elements does
     pub capacity: usize,
     pub remainder: usize,
     phantom: std::marker::PhantomData<T>
@@ -79,7 +77,7 @@ impl<T> PagedAlloc<T> {
         let remainder = aligned_byte_size % element_size;
         assert!((aligned_byte_size - remainder) % element_size == 0);
         let capacity = (aligned_byte_size - remainder) / element_size;
-
+        assert!(aligned_byte_size != 0);
 
         Self {
             aligned_byte_size,

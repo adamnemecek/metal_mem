@@ -28,10 +28,10 @@ fn test_paged_alloc() {
     assert!(element_size == 18);
     let count = 10;
     // let page_size = 4096;
-    let alloc = PagedAlloc::new(element_size, count);
+    let alloc = PagedAlloc::<TestStruct>::new(count);
 
-    println!("{}", alloc.is_valid());
+    // println!("{}", alloc.is_valid());
 
-    dbg!("{}", alloc);
+    // dbg!("{}", alloc);
 
 }

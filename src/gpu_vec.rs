@@ -11,7 +11,7 @@
 use crate::{
     // round_up,
     PagedAlloc,
-    page_aligned,
+    // page_aligned,
     GPUResource
 };
 
@@ -59,7 +59,8 @@ pub struct GPUVec<T: Copy> {
     device: metal::Device,
     buffer: metal::Buffer,
     len: usize,
-    capacity: usize,
+    alloc: PagedAlloc<T>,
+
     phantom: PhantomData<T>
 }
 
@@ -86,17 +87,15 @@ impl<T: Copy> GPUVec<T> {
 
     pub fn with_capacity(device: &metal::DeviceRef, capacity: usize) -> Self {
         let alloc = PagedAlloc::<T>::new(capacity);
-        let byte_capacity = page_aligned(capacity * Self::element_size()) as u64;
-        assert!(byte_capacity != 0);
         let buffer = device.new_buffer(
-            byte_capacity,
+            alloc.aligned_byte_size as u64,
             metal::MTLResourceOptions::CPUCacheModeDefaultCache
         );
         Self {
             device: device.to_owned(),
             buffer,
             len: 0,
-            capacity,
+            alloc,
             phantom: PhantomData
         }
     }
@@ -119,7 +118,7 @@ impl<T: Copy> GPUVec<T> {
 
     #[inline]
     pub fn capacity(&self) -> usize {
-        self.capacity
+        self.alloc.capacity
     }
 
     /// Reserves space for at least `addtional` more elements;
@@ -154,9 +153,8 @@ impl<T: Copy> GPUVec<T> {
         if capacity <= self.capacity() {
             return;
         }
-
-        let byte_capacity = page_aligned(capacity * Self::element_size()) as u64;
-        let buffer = self.device.new_buffer(byte_capacity, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let alloc = PagedAlloc::<T>::new(capacity);
+        let buffer = self.device.new_buffer(alloc.aligned_byte_size as u64, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         unsafe {
             std::ptr::copy(
                 self.as_ptr(),
@@ -164,8 +162,9 @@ impl<T: Copy> GPUVec<T> {
                 self.len()
             );
         }
+        self.alloc = alloc;
         self.buffer = buffer;
-        self.capacity = capacity;
+        // self.capacity = capacity;
     }
 
     pub fn extend_from_slice(&mut self, other: &[T]) {
@@ -510,12 +509,12 @@ impl<T: Copy> GPUVec<T> {
     fn grow(&mut self, used_capacity: usize, needed_extra_capacity: usize) {
         let required_cap = used_capacity.checked_add(needed_extra_capacity).unwrap();
         // Cannot overflow, because `cap <= isize::MAX`, and type of `cap` is `usize`.
-        let double_cap = self.capacity * 2;
+        let double_cap = self.capacity() * 2;
         // `double_cap` guarantees exponential growth.
         let capacity = std::cmp::max(double_cap, required_cap);
 
-        let byte_capacity = page_aligned(capacity * Self::element_size()) as u64;
-        let buffer = self.device.new_buffer(byte_capacity, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let alloc = PagedAlloc::<T>::new(capacity);
+        let buffer = self.device.new_buffer(alloc.aligned_byte_size as u64, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         unsafe {
             std::ptr::copy(
                 self.as_ptr(),
@@ -524,7 +523,7 @@ impl<T: Copy> GPUVec<T> {
             );
         }
         self.buffer = buffer;
-        self.capacity = capacity;
+        self.alloc = alloc;
 
     }
 
