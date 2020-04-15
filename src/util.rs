@@ -68,7 +68,7 @@ pub struct PagedAlloc<T> {
 
 impl<T> PagedAlloc<T> {
     pub fn is_valid(&self) -> bool {
-        (self.element_size * self.capacity) + self.remainder == self.byte_size
+        (self.element_size * self.capacity) + self.remainder == self.aligned_byte_size
     }
 
     pub fn new(capacity: usize) -> Self {
