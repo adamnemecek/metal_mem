@@ -14,7 +14,6 @@ use crate::{
     AsPtr,
     AsMutPtr,
     BufferAllocator,
-    // page_aligned,
     GPUResource
 };
 

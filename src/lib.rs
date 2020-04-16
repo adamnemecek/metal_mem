@@ -9,7 +9,7 @@ mod gpu_resource;
 mod gpu_var;
 mod gpu_vec;
 mod gpu_vec2;
-mod util;
+mod mem;
 mod raw_vec;
 mod alloc_ref;
 
@@ -18,10 +18,14 @@ pub use {
     gpu_var::*,
     gpu_vec::*,
     gpu_vec2::*,
-    util::*,
+    mem::*,
     raw_vec::*,
     alloc_ref::*,
 };
 
 #[macro_use]
 extern crate lazy_static;
+
+mod prelude {
+
+}
