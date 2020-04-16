@@ -11,6 +11,8 @@
 use crate::{
     // round_up,
     MemAlign,
+    AsPtr,
+    AsMutPtr,
     // page_aligned,
     GPUResource
 };
@@ -88,7 +90,7 @@ impl<T: Copy> GPUVec<T> {
     pub fn with_capacity(device: &metal::DeviceRef, capacity: usize) -> Self {
         let mem_align = MemAlign::<T>::new(capacity);
         let buffer = device.new_buffer(
-            mem_align.aligned_byte_size as u64,
+            mem_align.byte_size as u64,
             metal::MTLResourceOptions::CPUCacheModeDefaultCache
         );
         Self {
@@ -154,11 +156,12 @@ impl<T: Copy> GPUVec<T> {
             return;
         }
         let mem_align = MemAlign::<T>::new(capacity);
-        let buffer = self.device.new_buffer(mem_align.aligned_byte_size as u64, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let buffer = self.device.new_buffer(mem_align.byte_size as u64, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         unsafe {
             std::ptr::copy(
                 self.as_ptr(),
-                buffer.contents() as *mut T,
+                // buffer.contents() as *mut T,
+                buffer.as_mut_ptr(),
                 self.len()
             );
         }
@@ -514,7 +517,7 @@ impl<T: Copy> GPUVec<T> {
         let capacity = std::cmp::max(double_cap, required_cap);
 
         let mem_align = MemAlign::<T>::new(capacity);
-        let buffer = self.device.new_buffer(mem_align.aligned_byte_size as u64, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let buffer = self.device.new_buffer(mem_align.byte_size as u64, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         unsafe {
             std::ptr::copy(
                 self.as_ptr(),

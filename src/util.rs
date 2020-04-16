@@ -53,35 +53,39 @@ pub fn page_aligned(size: usize) -> usize {
     round_up(size, 4096)
 }
 
-/// Paged alloc represents how many elements a page-aligned allocation.
+/// `MemAlign` represents metadata for a page alligned allocation.
 ///
 #[derive(PartialEq, Eq, Debug)]
 pub struct MemAlign<T> {
-    pub aligned_byte_size: usize,
-    pub element_size: usize,
+    pub byte_size: usize,
+    // pub element_size: usize,
     pub capacity: usize,
     pub remainder: usize,
     phantom: std::marker::PhantomData<T>
 }
 
 impl<T> MemAlign<T> {
+    pub fn element_size() -> usize {
+        std::mem::size_of::<T>()
+    }
+
     pub fn is_valid(&self) -> bool {
-        (self.element_size * self.capacity) + self.remainder == self.aligned_byte_size
+        (Self::element_size() * self.capacity) + self.remainder == self.byte_size
     }
 
     pub fn new(capacity: usize) -> Self {
-        let element_size = std::mem::size_of::<T>();
+        let element_size = Self::element_size();
         let size = element_size * capacity;
 
-        let aligned_byte_size = page_aligned(size);
-        let remainder = aligned_byte_size % element_size;
-        assert!((aligned_byte_size - remainder) % element_size == 0);
-        let capacity = (aligned_byte_size - remainder) / element_size;
-        assert!(aligned_byte_size != 0);
+        let byte_size = page_aligned(size);
+        let remainder = byte_size % element_size;
+        assert!((byte_size - remainder) % element_size == 0);
+        let capacity = (byte_size - remainder) / element_size;
+        assert!(byte_size != 0);
 
         Self {
-            aligned_byte_size,
-            element_size,
+            byte_size,
+            // element_size,
             capacity,
             remainder,
             phantom: Default::default()
@@ -89,6 +93,35 @@ impl<T> MemAlign<T> {
     }
 }
 
+pub trait BufferAllocator<T> {
+    type Output;
+    fn new_buffer(&self, mem_align: MemAlign<T>) -> Self::Output;
+}
 
+impl<T> BufferAllocator<T> for metal::DeviceRef {
+    type Output = metal::BufferRef;
+    fn new_buffer(&self, mem_align: MemAlign<T>) -> Self::Output {
+        // self.new_buffer(mem_align. )
+        todo!();
+    }
+}
 
+pub trait AsPtr<T> {
+    fn as_ptr(&self) -> *const T;
+}
 
+pub trait AsMutPtr<T> {
+    fn as_mut_ptr(&self) -> *mut T;
+}
+
+impl<'a, T> AsPtr<T> for &'a metal::Buffer {
+    fn as_ptr(&self) -> *const T {
+        self.contents() as *const T
+    }
+}
+
+impl<T> AsMutPtr<T> for metal::BufferRef {
+    fn as_mut_ptr(&self) -> *mut T {
+        self.contents() as *mut T
+    }
+}
