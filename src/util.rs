@@ -55,7 +55,7 @@ pub fn page_aligned(size: usize) -> usize {
 
 /// `MemAlign` represents metadata for a page alligned allocation.
 ///
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub struct MemAlign<T> {
     pub byte_size: usize,
     // pub element_size: usize,
@@ -95,14 +95,15 @@ impl<T> MemAlign<T> {
 
 pub trait BufferAllocator<T> {
     type Output;
-    fn new_buffer(&self, mem_align: MemAlign<T>) -> Self::Output;
+    type Opts;
+    fn new_mem(&self, mem_align: MemAlign<T>, opts: Self::Opts) -> Self::Output;
 }
 
 impl<T> BufferAllocator<T> for metal::DeviceRef {
-    type Output = metal::BufferRef;
-    fn new_buffer(&self, mem_align: MemAlign<T>) -> Self::Output {
-        // self.new_buffer(mem_align. )
-        todo!();
+    type Output = metal::Buffer;
+    type Opts = metal::MTLResourceOptions;
+    fn new_mem(&self, mem_align: MemAlign<T>, opts: Self::Opts) -> Self::Output {
+        self.new_buffer(mem_align.byte_size as u64, opts)
     }
 }
 
@@ -114,13 +115,13 @@ pub trait AsMutPtr<T> {
     fn as_mut_ptr(&self) -> *mut T;
 }
 
-impl<'a, T> AsPtr<T> for &'a metal::Buffer {
+impl<'a, T> AsPtr<T> for metal::Buffer {
     fn as_ptr(&self) -> *const T {
         self.contents() as *const T
     }
 }
 
-impl<T> AsMutPtr<T> for metal::BufferRef {
+impl<T> AsMutPtr<T> for metal::Buffer{
     fn as_mut_ptr(&self) -> *mut T {
         self.contents() as *mut T
     }
