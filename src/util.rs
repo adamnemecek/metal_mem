@@ -58,7 +58,6 @@ pub fn page_aligned(size: usize) -> usize {
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub struct MemAlign<T> {
     pub byte_size: usize,
-    // pub element_size: usize,
     pub capacity: usize,
     pub remainder: usize,
     phantom: std::marker::PhantomData<T>
@@ -85,7 +84,6 @@ impl<T> MemAlign<T> {
 
         Self {
             byte_size,
-            // element_size,
             capacity,
             remainder,
             phantom: Default::default()
