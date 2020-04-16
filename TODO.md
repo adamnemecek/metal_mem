@@ -1,8 +1,6 @@
 # TODO
 
-* [ ] byte_capacity and capacity are mixed up because when we allocate whole pages but capacity is only
-    * [ ] use page pagedalloc
-    * [ ]
+* [x] byte_capacity and capacity are mixed up because when we allocate whole pages but capacity is only
 * [ ] fix splice_slow
     * 
 * [ ] for v2, maybe i can just use allocref

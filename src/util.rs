@@ -56,7 +56,7 @@ pub fn page_aligned(size: usize) -> usize {
 /// Paged alloc represents how many elements a page-aligned allocation.
 ///
 #[derive(PartialEq, Eq, Debug)]
-pub struct PagedAlloc<T> {
+pub struct MemAlign<T> {
     pub aligned_byte_size: usize,
     pub element_size: usize,
     pub capacity: usize,
@@ -64,7 +64,7 @@ pub struct PagedAlloc<T> {
     phantom: std::marker::PhantomData<T>
 }
 
-impl<T> PagedAlloc<T> {
+impl<T> MemAlign<T> {
     pub fn is_valid(&self) -> bool {
         (self.element_size * self.capacity) + self.remainder == self.aligned_byte_size
     }

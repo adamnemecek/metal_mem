@@ -2,7 +2,7 @@
 
 use metalgear::{
     round_up,
-    PagedAlloc
+    MemAlign
 };
 
 #[test]
@@ -28,7 +28,7 @@ fn test_paged_alloc() {
     assert!(element_size == 18);
     let count = 10;
     // let page_size = 4096;
-    let alloc = PagedAlloc::<TestStruct>::new(count);
+    let alloc = MemAlign::<TestStruct>::new(count);
 
     // println!("{}", alloc.is_valid());
 

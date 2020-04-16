@@ -10,7 +10,7 @@
 
 use crate::{
     // round_up,
-    PagedAlloc,
+    MemAlign,
     // page_aligned,
     GPUResource
 };
@@ -59,7 +59,7 @@ pub struct GPUVec<T: Copy> {
     device: metal::Device,
     buffer: metal::Buffer,
     len: usize,
-    alloc: PagedAlloc<T>,
+    mem_align: MemAlign<T>,
 
     phantom: PhantomData<T>
 }
@@ -86,16 +86,16 @@ impl<T: Copy> GPUVec<T> {
     // }
 
     pub fn with_capacity(device: &metal::DeviceRef, capacity: usize) -> Self {
-        let alloc = PagedAlloc::<T>::new(capacity);
+        let mem_align = MemAlign::<T>::new(capacity);
         let buffer = device.new_buffer(
-            alloc.aligned_byte_size as u64,
+            mem_align.aligned_byte_size as u64,
             metal::MTLResourceOptions::CPUCacheModeDefaultCache
         );
         Self {
             device: device.to_owned(),
             buffer,
             len: 0,
-            alloc,
+            mem_align,
             phantom: PhantomData
         }
     }
@@ -118,7 +118,7 @@ impl<T: Copy> GPUVec<T> {
 
     #[inline]
     pub fn capacity(&self) -> usize {
-        self.alloc.capacity
+        self.mem_align.capacity
     }
 
     /// Reserves space for at least `addtional` more elements;
@@ -153,8 +153,8 @@ impl<T: Copy> GPUVec<T> {
         if capacity <= self.capacity() {
             return;
         }
-        let alloc = PagedAlloc::<T>::new(capacity);
-        let buffer = self.device.new_buffer(alloc.aligned_byte_size as u64, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let mem_align = MemAlign::<T>::new(capacity);
+        let buffer = self.device.new_buffer(mem_align.aligned_byte_size as u64, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         unsafe {
             std::ptr::copy(
                 self.as_ptr(),
@@ -162,7 +162,7 @@ impl<T: Copy> GPUVec<T> {
                 self.len()
             );
         }
-        self.alloc = alloc;
+        self.mem_align = mem_align;
         self.buffer = buffer;
         // self.capacity = capacity;
     }
@@ -513,8 +513,8 @@ impl<T: Copy> GPUVec<T> {
         // `double_cap` guarantees exponential growth.
         let capacity = std::cmp::max(double_cap, required_cap);
 
-        let alloc = PagedAlloc::<T>::new(capacity);
-        let buffer = self.device.new_buffer(alloc.aligned_byte_size as u64, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let mem_align = MemAlign::<T>::new(capacity);
+        let buffer = self.device.new_buffer(mem_align.aligned_byte_size as u64, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         unsafe {
             std::ptr::copy(
                 self.as_ptr(),
@@ -523,7 +523,7 @@ impl<T: Copy> GPUVec<T> {
             );
         }
         self.buffer = buffer;
-        self.alloc = alloc;
+        self.mem_align = mem_align;
 
     }
 
