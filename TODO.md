@@ -1,9 +1,10 @@
 # TODO
 
-* [x] byte_capacity and capacity are mixed up because when we allocate whole pages but capacity is only
+* [x] byte_capacity and capacity are mixed up because when we allocate whole pages but only uses a subst of these
 * [ ] fix splice_slow
     * 
 * [ ] for v2, maybe i can just use allocref
+* [ ] try to get rid of the copy requirement on gpuvec
 
 * [ ] create your own allocref trait
 * [ ] add trait implementations from https://doc.rust-lang.org/std/vec/struct.Vec.html
@@ -20,3 +21,6 @@
 * [ ] in drain, what is T: Copy + 'a
 * [x] doubleendediterator
 
+## GPUVar
+* [ ] use memalign like in vec
+* [ ] use 

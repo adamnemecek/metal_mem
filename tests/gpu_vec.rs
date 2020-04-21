@@ -2,6 +2,14 @@
 use metalgear::GPUVec;
 
 #[test]
+fn test_default() {
+    let mut vec = GPUVec::<i32>::new();
+    vec.push(30);
+    assert!(vec.len() == 1);
+    assert!(vec[0] == 30);
+}
+
+#[test]
 fn test_from_slice() {
     let dev = metal::Device::system_default().unwrap();
     let vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);

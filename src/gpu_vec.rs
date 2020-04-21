@@ -44,6 +44,7 @@ impl Device {
         }
     }
 }
+
 impl Default for Device {
     fn default() -> Self {
         Self::new(metal::Device::system_default().unwrap())
@@ -74,6 +75,12 @@ impl<T: Copy> GPUResource for GPUVec<T> {
 
     fn set_device(&mut self, device: &Self::Device) {
         self.device = device.to_owned();
+    }
+}
+
+impl<T: Copy> Default for GPUVec<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

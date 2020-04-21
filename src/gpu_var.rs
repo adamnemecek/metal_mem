@@ -17,7 +17,7 @@ impl<T: Copy> GPUVar<T> {
             buffer,
             phantom: std::marker::PhantomData
         };
-        ret.set_value(value);
+        *ret = value;
         ret
     }
 
@@ -36,23 +36,23 @@ impl<T: Copy> GPUVar<T> {
         self.buffer.contents() as *mut T
     }
 
-    #[inline]
-    pub fn value(&self) -> T {
-        unsafe {
-            *self.as_ptr()
-        }
-    }
+    // #[inline]
+    // pub fn value(&self) -> T {
+    //     unsafe {
+    //         *self.as_ptr()
+    //     }
+    // }
 
-    #[inline]
-    pub fn set_value(&mut self, value: T) {
-        unsafe {
-            std::ptr::copy(
-                &value,
-                self.as_mut_ptr(),
-                Self::element_size()
-            );
-        }
-    }
+    // #[inline]
+    // pub fn set_value(&mut self, value: T) {
+    //     unsafe {
+    //         std::ptr::copy(
+    //             &value,
+    //             self.as_mut_ptr(),
+    //             Self::element_size()
+    //         );
+    //     }
+    // }
 }
 
 impl<T: Copy> AsRef<metal::Buffer> for GPUVar<T> {
@@ -71,7 +71,27 @@ impl<T: Copy> AsMut<metal::Buffer> for GPUVar<T> {
 
 impl<T: Copy> Clone for GPUVar<T> {
     fn clone(&self) -> Self {
-        Self::new(&self.device, self.value())
+        Self::new(&self.device, **self)
     }
 }
 
+
+impl<T: Copy> std::ops::Deref for GPUVar<T> {
+    type Target = T;
+
+    #[inline]
+    fn deref(&self) -> &T {
+        unsafe {
+            self.as_ptr().as_ref().unwrap()
+        }
+    }
+}
+
+impl<T: Copy> std::ops::DerefMut for GPUVar<T> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut T {
+        unsafe {
+            self.as_mut_ptr().as_mut().unwrap()
+        }
+    }
+}
