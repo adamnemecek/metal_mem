@@ -22,5 +22,5 @@
 * [x] doubleendediterator
 
 ## GPUVar
-* [ ] use memalign like in vec
-* [ ] use 
+* [x] use memalign like in vec
+* [x] use deref and derefmut instead of value and set_value
