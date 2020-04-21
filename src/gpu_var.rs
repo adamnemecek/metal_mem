@@ -1,20 +1,24 @@
 use crate::{
-    page_aligned,
+    MemAlign,
+    BufferAllocator
 };
 
 pub struct GPUVar<T: Copy> {
     device: metal::Device,
     buffer: metal::Buffer,
+    mem_align: MemAlign<T>,
     phantom: std::marker::PhantomData<T>
 }
 
 impl<T: Copy> GPUVar<T> {
     pub fn new(device: &metal::DeviceRef, value: T) -> Self {
-        let byte_capacity = page_aligned(Self::element_size()) as u64;
-        let buffer = device.new_buffer(byte_capacity, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let mem_align = MemAlign::<T>::new(1);
+        // let byte_capacity = page_aligned(Self::element_size()) as u64;
+        let buffer = device.new_mem(mem_align, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         let mut ret = Self {
             device: device.to_owned(),
             buffer,
+            mem_align,
             phantom: std::marker::PhantomData
         };
         *ret = value;
