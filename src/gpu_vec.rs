@@ -86,7 +86,8 @@ impl<T: Copy> Default for GPUVec<T> {
 
 impl<T: Copy> GPUVec<T> {
     pub fn new() -> Self {
-        let device = Device::default().device;
+        // let device = Device::default().device;
+        let device = metal::Device::system_default().unwrap();
         Self::with_capacity(&device, 1)
     }
 
