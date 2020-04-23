@@ -17,7 +17,7 @@ impl<T: Copy> GPUVar<T> {
         let mut ret = Self {
             device: device.to_owned(),
             buffer,
-            phantom: std::marker::PhantomData
+            phantom: Default::default()
         };
         *ret = value;
         ret
@@ -30,7 +30,7 @@ impl<T: Copy> GPUVar<T> {
         let ret = Self {
             device: device.to_owned(),
             buffer,
-            phantom: std::marker::PhantomData
+            phantom: Default::default()
         };
         ret
     }
