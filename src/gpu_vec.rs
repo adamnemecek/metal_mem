@@ -1021,16 +1021,16 @@ impl<T: Copy> Clone for GPUVec<T> {
     // }
 }
 
-impl<T: Copy> AsRef<metal::Buffer> for GPUVec<T> {
+impl<T: Copy> AsRef<metal::BufferRef> for GPUVec<T> {
     #[inline]
-    fn as_ref(&self) -> &metal::Buffer {
+    fn as_ref(&self) -> &metal::BufferRef {
         &self.buffer
     }
 }
 
-impl<T: Copy> AsMut<metal::Buffer> for GPUVec<T> {
+impl<T: Copy> AsMut<metal::BufferRef> for GPUVec<T> {
     #[inline]
-    fn as_mut(&mut self) -> &mut metal::Buffer {
+    fn as_mut(&mut self) -> &mut metal::BufferRef {
         &mut self.buffer
     }
 }
