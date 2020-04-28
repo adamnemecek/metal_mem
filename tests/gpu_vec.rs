@@ -1,6 +1,14 @@
 
+#[macro_use]
+extern crate metalgear;
+
 use metalgear::GPUVec;
 
+#[test]
+fn test_macro(){
+    let v = gpuvec![1,2,3,4];
+    assert!(v[..] == [1,2,3,4][..]);
+}
 #[test]
 fn test_default() {
     let mut vec = GPUVec::<i32>::new();

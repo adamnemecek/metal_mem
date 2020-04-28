@@ -110,6 +110,12 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
+    pub fn from_elem(x: T) -> Self {
+        let mut ret = Self::new();
+        ret[0] = x;
+        ret
+    }
+
     pub fn from_slice(device: &metal::DeviceRef, data: &[T]) -> Self {
         let len = data.len();
         let mut ret = Self::with_capacity(device, len);
@@ -126,6 +132,13 @@ impl<T: Copy> GPUVec<T> {
         ret
     }
 
+
+
+    pub fn from_slice1(data: &[T]) -> Self {
+        let mut ret = Self::new();
+        ret.extend_from_slice(data);
+        ret
+    }
     #[inline]
     pub fn capacity(&self) -> usize {
         self.mem_align.capacity
@@ -189,7 +202,7 @@ impl<T: Copy> GPUVec<T> {
         unsafe {
             std::ptr::copy(
                 other.as_ptr(),
-                self.as_mut_ptr().offset(self.len() as isize),
+                self.as_mut_ptr().offset(self.len() as _),
                 other.len()
             );
         }
@@ -241,7 +254,7 @@ impl<T: Copy> GPUVec<T> {
             // bounds check on hole succeeds there must be a last element (which
             // can be self[index] itself).
             let hole: *mut T = &mut self[index];
-            let last = std::ptr::read(self.as_ptr().offset((self.len - 1) as isize));
+            let last = std::ptr::read(self.as_ptr().offset((self.len - 1) as _));
             self.len -= 1;
             std::ptr::replace(hole, last)
         }
@@ -273,9 +286,9 @@ impl<T: Copy> GPUVec<T> {
     }
 
     pub fn remove(&mut self, index: usize) -> T {
-        ///
-        /// Implementation based on Rust's Vec::remove
-        ///
+        //
+        // Implementation based on Rust's Vec::remove
+        //
         let len = self.len();
         assert!(index < len);
         unsafe {
@@ -652,7 +665,7 @@ impl<T : Copy> GPUVec<T> {
 //     fn index(&self, index: usize) -> &Self::Output {
 //         assert!(index < self.len());
 //         unsafe {
-//             self.as_ptr().offset(index as isize).as_ref().unwrap()
+//             self.as_ptr().offset(index as _).as_ref().unwrap()
 //         }
 //     }
 // }
@@ -661,7 +674,7 @@ impl<T : Copy> GPUVec<T> {
 //     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
 //         assert!(index < self.len());
 //         unsafe {
-//             self.as_mut_ptr().offset(index as isize).as_mut().unwrap()
+//             self.as_mut_ptr().offset(index as _).as_mut().unwrap()
 //         }
 //     }
 // }
@@ -1111,7 +1124,7 @@ impl<T: Copy> IntoIterator for GPUVec<T> {
         unsafe {
             let begin = self.as_mut_ptr();
             let end = if std::mem::size_of::<T>() == 0 {
-                std::intrinsics::arith_offset(begin as *const i8, self.len() as isize) as *const T
+                std::intrinsics::arith_offset(begin as *const i8, self.len() as _) as *const T
             } else {
                 begin.add(self.len()) as *const T
             };

@@ -4,6 +4,7 @@
 #![feature(ptr_offset_from)]
 #![feature(slice_partition_dedup)]
 #![feature(trusted_len)]
+#![feature(box_syntax)]
 
 mod gpu_resource;
 mod gpu_var;
@@ -13,6 +14,8 @@ mod mem;
 mod raw_vec;
 mod alloc_ref;
 
+mod macros;
+
 pub use {
     gpu_resource::*,
     gpu_var::*,
@@ -21,6 +24,7 @@ pub use {
     mem::*,
     raw_vec::*,
     alloc_ref::*,
+    macros::*,
 };
 
 #[macro_use]
