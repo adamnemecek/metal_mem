@@ -23,6 +23,12 @@ impl<T: Copy> GPUVar<T> {
         ret
     }
 
+    pub fn with_value1(value: T) -> Self {
+        let mut ret = Self::new();
+        *ret = value;
+        ret
+    }
+
     pub fn new() -> Self {
         let device = metal::Device::system_default().unwrap();
         let mem_align = MemAlign::<T>::new(1);

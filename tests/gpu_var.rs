@@ -1,6 +1,15 @@
 
+#[macro_use]
+extern crate metalgear;
 // mod tests {
 use metalgear::GPUVar;
+
+#[test]
+fn test_var_mac() {
+    let var = gpuvar![1];
+    assert!(*var == 1);
+}
+
 #[test]
 fn test_var() {
     let dev = metal::Device::system_default().unwrap();

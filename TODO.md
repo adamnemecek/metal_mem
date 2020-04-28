@@ -1,4 +1,6 @@
 # TODO
+* [ ] refine macros
+    * why is gpuvec (and vec) using box?
 
 * [x] byte_capacity and capacity are mixed up because when we allocate whole pages but only uses a subst of these
 * [ ] fix splice_slow
