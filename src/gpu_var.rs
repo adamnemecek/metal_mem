@@ -115,3 +115,6 @@ impl<T: Copy> std::ops::DerefMut for GPUVar<T> {
         }
     }
 }
+
+unsafe impl<T: Copy> Send for GPUVar<T> { }
+unsafe impl<T: Copy> Sync for GPUVar<T> { }

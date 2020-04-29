@@ -75,6 +75,7 @@ impl<T: Copy> GPUResource for GPUVec<T> {
 
     fn set_device(&mut self, device: &Self::Device) {
         self.device = device.to_owned();
+        todo!("we need to realloc in the new device");
     }
 }
 
@@ -131,8 +132,6 @@ impl<T: Copy> GPUVec<T> {
         ret.len = len;
         ret
     }
-
-
 
     pub fn from_slice1(data: &[T]) -> Self {
         let mut ret = Self::new();
@@ -1059,7 +1058,6 @@ impl<T: Copy + PartialEq> PartialEq for GPUVec<T> {
     fn ne(&self, other: &Self) -> bool {
         self[..] != other[..]
     }
-
 }
 
 impl<T: Copy + Eq> Eq for GPUVec<T> { }
