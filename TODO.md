@@ -2,9 +2,10 @@
 * [ ] refine macros
     * why is gpuvec (and vec) using box?
 
+
 * [x] byte_capacity and capacity are mixed up because when we allocate whole pages but only uses a subst of these
 * [ ] fix splice_slow
-    * 
+    * try to create a dummy vector with like the inner being just a vec and see how that works
 * [ ] for v2, maybe i can just use allocref
 * [ ] try to get rid of the copy requirement on gpuvec
 
