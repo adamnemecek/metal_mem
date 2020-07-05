@@ -5,7 +5,7 @@ use crate::{
 
 pub struct GPUVar<T: Copy> {
     device: metal::Device,
-    buffer: metal::Buffer,
+    inner: metal::Buffer,
     // mem_align: MemAlign<T>,
     phantom: std::marker::PhantomData<T>
 }
@@ -13,10 +13,10 @@ pub struct GPUVar<T: Copy> {
 impl<T: Copy> GPUVar<T> {
     pub fn with_value(device: &metal::DeviceRef, value: T) -> Self {
         let mem_align = MemAlign::<T>::new(1);
-        let buffer = device.new_mem(mem_align, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let inner = device.new_mem(mem_align, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         let mut ret = Self {
             device: device.to_owned(),
-            buffer,
+            inner,
             phantom: Default::default()
         };
         *ret = value;
@@ -32,10 +32,10 @@ impl<T: Copy> GPUVar<T> {
     pub fn new() -> Self {
         let device = metal::Device::system_default().unwrap();
         let mem_align = MemAlign::<T>::new(1);
-        let buffer = device.new_mem(mem_align, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let inner = device.new_mem(mem_align, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         let ret = Self {
             device: device.to_owned(),
-            buffer,
+            inner,
             phantom: Default::default()
         };
         ret
@@ -48,12 +48,12 @@ impl<T: Copy> GPUVar<T> {
 
     #[inline]
     pub fn as_ptr(&self) -> *const T {
-        self.buffer.contents() as *const T
+        self.inner.contents() as *const T
     }
 
     #[inline]
     pub fn as_mut_ptr(&self) -> *mut T {
-        self.buffer.contents() as *mut T
+        self.inner.contents() as *mut T
     }
 
     // #[inline]
@@ -78,14 +78,14 @@ impl<T: Copy> GPUVar<T> {
 impl<T: Copy> AsRef<metal::BufferRef> for GPUVar<T> {
     #[inline]
     fn as_ref(&self) -> &metal::BufferRef {
-        &self.buffer
+        &self.inner
     }
 }
 
 impl<T: Copy> AsMut<metal::BufferRef> for GPUVar<T> {
     #[inline]
     fn as_mut(&mut self) -> &mut metal::BufferRef {
-        &mut self.buffer
+        &mut self.inner
     }
 }
 

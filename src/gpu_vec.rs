@@ -33,6 +33,7 @@ use std::marker::PhantomData;
 
 // static mut DEVICE: metal::Device = metal::Device::system_default().unwrap();
 
+/// this is necessary because of send + sync
 pub struct Device {
     device: metal::Device
 }
@@ -60,10 +61,9 @@ lazy_static! {
 
 pub struct GPUVec<T: Copy> {
     device: metal::Device,
-    buffer: metal::Buffer,
+    inner: metal::Buffer,
     len: usize,
     mem_align: MemAlign<T>,
-
     phantom: PhantomData<T>
 }
 
@@ -85,6 +85,20 @@ impl<T: Copy> Default for GPUVec<T> {
     }
 }
 
+///
+/// from MTLBuffer
+///
+impl<T: Copy> GPUVec<T> {
+    pub fn label(&self) -> &str {
+        self.inner.label()
+    }
+
+    pub fn set_label(&self, label: &str) {
+        self.inner.set_label(label)
+    }
+}
+
+/// From Rust vec
 impl<T: Copy> GPUVec<T> {
     pub fn new() -> Self {
         // let device = Device::default().device;
@@ -98,13 +112,13 @@ impl<T: Copy> GPUVec<T> {
 
     pub fn with_capacity(device: &metal::DeviceRef, capacity: usize) -> Self {
         let mem_align = MemAlign::<T>::new(capacity);
-        let buffer = device.new_mem(
+        let inner = device.new_mem(
             mem_align,
             metal::MTLResourceOptions::CPUCacheModeDefaultCache
         );
         Self {
             device: device.to_owned(),
-            buffer,
+            inner,
             len: 0,
             mem_align,
             phantom: PhantomData
@@ -138,6 +152,7 @@ impl<T: Copy> GPUVec<T> {
         ret.extend_from_slice(data);
         ret
     }
+
     #[inline]
     pub fn capacity(&self) -> usize {
         self.mem_align.capacity
@@ -176,17 +191,17 @@ impl<T: Copy> GPUVec<T> {
             return;
         }
         let mem_align = MemAlign::<T>::new(capacity);
-        let buffer = self.device.new_mem(mem_align, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let inner = self.device.new_mem(mem_align, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         unsafe {
             std::ptr::copy(
                 self.as_ptr(),
-                // buffer.contents() as *mut T,
-                buffer.as_mut_ptr(),
+                // inner.contents() as *mut T,
+                inner.as_mut_ptr(),
                 self.len()
             );
         }
         self.mem_align = mem_align;
-        self.buffer = buffer;
+        self.inner = inner;
         // self.capacity = capacity;
     }
 
@@ -233,12 +248,12 @@ impl<T: Copy> GPUVec<T> {
 
     #[inline]
     pub fn as_ptr(&self) -> *const T {
-        self.buffer.as_ptr()
+        self.inner.as_ptr()
     }
 
     #[inline]
     pub fn as_mut_ptr(&self) -> *mut T {
-        self.buffer.as_mut_ptr()
+        self.inner.as_mut_ptr()
     }
 
     #[inline]
@@ -394,7 +409,7 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
-    /// Appends elements to `Self` from other buffer.
+    /// Appends elements to `Self` from other inner.
     #[inline]
     unsafe fn append_elements(&mut self, other: *const [T]) {
         let count = (*other).len();
@@ -537,15 +552,15 @@ impl<T: Copy> GPUVec<T> {
         let capacity = std::cmp::max(double_cap, required_cap);
 
         let mem_align = MemAlign::<T>::new(capacity);
-        let buffer = self.device.new_mem(mem_align, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let inner = self.device.new_mem(mem_align, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
         unsafe {
             std::ptr::copy(
                 self.as_ptr(),
-                buffer.as_mut_ptr(),
+                inner.as_mut_ptr(),
                 self.len()
             );
         }
-        self.buffer = buffer;
+        self.inner = inner;
         self.mem_align = mem_align;
 
     }
@@ -1006,7 +1021,7 @@ impl<T: Copy> GPUVec<T> {
 impl<T: Copy> Clone for GPUVec<T> {
     fn clone(&self) -> Self {
         // let byte_capacity = self.byte_capacity();
-        // let buffer = self.device.new_buffer(
+        // let inner = self.device.new_buffer(
         //     byte_capacity as u64,
         //     metal::MTLResourceOptions::CPUCacheModeDefaultCache
         // );
@@ -1014,13 +1029,13 @@ impl<T: Copy> Clone for GPUVec<T> {
         // unsafe {
         //     std::ptr::copy(
         //         self.as_ptr(),
-        //         buffer.contents() as *mut T,
+        //         inner.contents() as *mut T,
         //         self.len()
         //     );
         // }
         // Self {
         //     device: self.device.to_owned(),
-        //     buffer,
+        //     inner,
         //     len: self.len(),
         //     capacity: self.capacity(),
         //     phantom: std::marker::PhantomData
@@ -1036,14 +1051,14 @@ impl<T: Copy> Clone for GPUVec<T> {
 impl<T: Copy> AsRef<metal::BufferRef> for GPUVec<T> {
     #[inline]
     fn as_ref(&self) -> &metal::BufferRef {
-        &self.buffer
+        &self.inner
     }
 }
 
 impl<T: Copy> AsMut<metal::BufferRef> for GPUVec<T> {
     #[inline]
     fn as_mut(&mut self) -> &mut metal::BufferRef {
-        &mut self.buffer
+        &mut self.inner
     }
 }
 
@@ -1281,6 +1296,6 @@ unsafe impl<T: Copy> Sync for GPUVec<T> { }
 
 impl<T: Copy> Drop for GPUVec<T> {
     fn drop(&mut self) {
-        self.buffer.set_purgeable_state(metal::MTLPurgeableState::Empty);
+        self.inner.set_purgeable_state(metal::MTLPurgeableState::Empty);
     }
 }
