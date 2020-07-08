@@ -63,5 +63,6 @@ fn main() {
     // println!("r: {}", roundup);
     // println!("{}", std::mem::size_of::<TestStruct>());
     let v = gpuvec![1,2,3];
+    println!("{:?}", v.ptr_hash());
     // println!("dsa");
 }

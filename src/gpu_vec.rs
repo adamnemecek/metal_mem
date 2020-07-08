@@ -98,6 +98,15 @@ impl<T: Copy> GPUVec<T> {
     }
 }
 
+impl<T: Copy> GPUVec<T> {
+    pub fn ptr_hash(&self) -> usize {
+        let ptr = self.inner.contents();
+        unsafe {
+            std::mem::transmute(ptr)
+        }
+    }
+}
+
 /// From Rust vec
 impl<T: Copy> GPUVec<T> {
     pub fn new() -> Self {
