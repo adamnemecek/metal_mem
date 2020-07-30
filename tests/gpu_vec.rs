@@ -1,13 +1,12 @@
-
 #[macro_use]
 extern crate metalgear;
 
 use metalgear::GPUVec;
 
 #[test]
-fn test_macro(){
-    let v = gpuvec![1,2,3,4];
-    assert!(v[..] == [1,2,3,4][..]);
+fn test_macro() {
+    let v = gpuvec![1, 2, 3, 4];
+    assert!(v[..] == [1, 2, 3, 4][..]);
 }
 #[test]
 fn test_default() {
@@ -20,7 +19,7 @@ fn test_default() {
 #[test]
 fn test_from_slice() {
     let dev = metal::Device::system_default().unwrap();
-    let vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let vec = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
     println!("capacity: {}", vec.capacity());
 
     for e in 0..vec.len() {
@@ -31,15 +30,15 @@ fn test_from_slice() {
 #[test]
 fn test_index() {
     let dev = metal::Device::system_default().unwrap();
-    let vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let vec = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
 
-    assert!(vec[..] == [0,1,2,3,4,5,6][..]);
+    assert!(vec[..] == [0, 1, 2, 3, 4, 5, 6][..]);
 }
 
 #[test]
 fn test_index_mut() {
     let dev = metal::Device::system_default().unwrap();
-    let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let mut vec = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
 
     vec[0] = 8;
     vec[1] = 8;
@@ -49,74 +48,74 @@ fn test_index_mut() {
     vec[5] = 8;
     vec[6] = 8;
 
-    assert!(vec[..] == [8,8,8,8,8,8,8][..]);
+    assert!(vec[..] == [8, 8, 8, 8, 8, 8, 8][..]);
 }
 
 #[test]
 fn test_extend() {
     let dev = metal::Device::system_default().unwrap();
-    let v = vec![0,1,2,3,4,5,6];
+    let v = vec![0, 1, 2, 3, 4, 5, 6];
     let mut vec = GPUVec::from_slice(&dev, &v);
     vec.extend(v.into_iter());
 
-    assert!(vec[..] == [0,1,2,3,4,5,6,0,1,2,3,4,5,6][..]);
+    assert!(vec[..] == [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6][..]);
 }
 
 #[test]
 fn test_extend_from_slice() {
     let dev = metal::Device::system_default().unwrap();
-    let v = vec![0,1,2,3,4,5,6];
+    let v = vec![0, 1, 2, 3, 4, 5, 6];
     let mut vec = GPUVec::from_slice(&dev, &v);
 
     vec.extend_from_slice(&v);
 
-    assert!(vec[..] == [0,1,2,3,4,5,6,0,1,2,3,4,5,6][..]);
+    assert!(vec[..] == [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6][..]);
 }
 
 #[test]
 fn test_push() {
     let dev = metal::Device::system_default().unwrap();
-    let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let mut vec = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
     assert!(vec.len() == 7);
 
     vec.push(7);
 
-    assert!(vec[..] == [0,1,2,3,4,5,6,7][..]);
+    assert!(vec[..] == [0, 1, 2, 3, 4, 5, 6, 7][..]);
 }
 
 #[test]
 fn test_insert() {
     let dev = metal::Device::system_default().unwrap();
-    let mut vec = GPUVec::from_slice(&dev, &[0,1,2,4,5,6]);
+    let mut vec = GPUVec::from_slice(&dev, &[0, 1, 2, 4, 5, 6]);
     vec.insert(3, 3);
 
-    assert!(vec[..] == [0,1,2,3,4,5,6][..]);
+    assert!(vec[..] == [0, 1, 2, 3, 4, 5, 6][..]);
 }
 
 #[test]
 fn test_truncate() {
     let dev = metal::Device::system_default().unwrap();
-    let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let mut vec = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
     vec.truncate(3);
 
     assert!(vec.len() == 3);
-    assert!(vec[..] == [0,1,2][..]);
+    assert!(vec[..] == [0, 1, 2][..]);
     assert!(vec.get(3) == None);
 }
 
 #[test]
 fn test_remove() {
     let dev = metal::Device::system_default().unwrap();
-    let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let mut vec = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
     vec.remove(3);
 
-    assert!(vec[..] == [0,1,2,4,5,6][..]);
+    assert!(vec[..] == [0, 1, 2, 4, 5, 6][..]);
 }
 
 #[test]
 fn test_iter() {
     let dev = metal::Device::system_default().unwrap();
-    let v1 = GPUVec::from_slice(&dev, &[1,2,3]);
+    let v1 = GPUVec::from_slice(&dev, &[1, 2, 3]);
     let mut v1_iter = v1.iter();
 
     // iter() returns an iterator of slices.
@@ -129,7 +128,7 @@ fn test_iter() {
 #[test]
 fn test_into_iter() {
     let dev = metal::Device::system_default().unwrap();
-    let v1 = GPUVec::from_slice(&dev, &[1,2,3]);
+    let v1 = GPUVec::from_slice(&dev, &[1, 2, 3]);
     let mut v1_iter = v1.into_iter();
 
     // into_iter() returns an iterator from a value.
@@ -142,7 +141,7 @@ fn test_into_iter() {
 #[test]
 fn test_iter_mut() {
     let dev = metal::Device::system_default().unwrap();
-    let mut v1 = GPUVec::from_slice(&dev, &[1,2,3]);
+    let mut v1 = GPUVec::from_slice(&dev, &[1, 2, 3]);
 
     let mut v1_iter = v1.iter_mut();
 
@@ -156,20 +155,20 @@ fn test_iter_mut() {
 #[test]
 fn test_retain() {
     let dev = metal::Device::system_default().unwrap();
-    let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let mut vec = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
     vec.retain(|x| x % 2 == 0);
     assert!(vec.len() == 4);
 
-    assert!(vec[..] == [0,2,4,6][..]);
+    assert!(vec[..] == [0, 2, 4, 6][..]);
 }
 
 #[test]
 fn test_eq() {
     let dev = metal::Device::system_default().unwrap();
 
-    let a = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
-    let b = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
-    let c = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,7]);
+    let a = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
+    let b = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
+    let c = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 7]);
 
     assert!(a == b);
     assert!(b != c);
@@ -178,18 +177,18 @@ fn test_eq() {
 #[test]
 fn test_swap_remove() {
     let dev = metal::Device::system_default().unwrap();
-    let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let mut vec = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
 
     let res = vec.swap_remove(3);
 
     assert!(res == 3);
-    assert!(vec[..] == [0,1,2,6,4,5][..]);
+    assert!(vec[..] == [0, 1, 2, 6, 4, 5][..]);
 }
 
 #[test]
 fn test_clear() {
     let dev = metal::Device::system_default().unwrap();
-    let mut vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let mut vec = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
     vec.clear();
 
     assert!(vec.is_empty());
@@ -198,12 +197,12 @@ fn test_clear() {
 #[test]
 fn test_clone() {
     let dev = metal::Device::system_default().unwrap();
-    let vec = GPUVec::from_slice(&dev, &[0,1,2,3,4,5,6]);
+    let vec = GPUVec::from_slice(&dev, &[0, 1, 2, 3, 4, 5, 6]);
     let copy = vec.clone();
     assert!(vec.len() == copy.len());
     assert!(vec.capacity() == copy.capacity());
 
-    assert!(copy[..] == [0,1,2,3,4,5,6][..]);
+    assert!(copy[..] == [0, 1, 2, 3, 4, 5, 6][..]);
     assert!(vec.as_ptr() != copy.as_ptr());
 }
 
@@ -213,7 +212,7 @@ fn test_drain() {
     let mut v: GPUVec<u32> = GPUVec::from_slice(&dev, &[1, 2, 3]);
     let u: Vec<_> = v.drain(1..).collect();
     assert!(v[..] == [1][..]);
-    assert!(u[..] == [2,3][..]);
+    assert!(u[..] == [2, 3][..]);
 }
 
 #[test]
@@ -308,7 +307,6 @@ fn test_drain_filter() {
     // // dbg!("{}", &result);
     // // assert!(result == expected);
 
-
     // // assert_eq!(u, &[1, 2]);
 }
 
@@ -321,8 +319,8 @@ fn test_splice() {
     let new = [7, 8];
     let u: Vec<_> = v.splice_slow(..2, new.iter().cloned());
 
-    assert!(v[..] == [7,8,3][..]);
-    assert!(u[..] == [1,2][..]);
+    assert!(v[..] == [7, 8, 3][..]);
+    assert!(u[..] == [1, 2][..]);
 }
 
 // #[test]
@@ -361,13 +359,12 @@ fn test_splice_inclusive_range() {
     dbg!("{}", v.to_vec());
 
     assert!(v[..] == [1, 2, 10, 11, 12, 5, 6][..]);
-    assert!(t1[..] == [3,4][..]);
+    assert!(t1[..] == [3, 4][..]);
 
     let t2: Vec<_> = v.splice_slow(1..=2, Some(20));
     assert!(v[..] == [1, 20, 11, 12, 5, 6][..]);
-    assert!(t2[..] == [2,10][..]);
+    assert!(t2[..] == [2, 10][..]);
 }
-
 
 // #[test]
 // #[should_panic]
@@ -399,7 +396,7 @@ fn test_splice_unbounded() {
     let dev = metal::Device::system_default().unwrap();
     let mut vec = GPUVec::from_slice(&dev, &[1, 2, 3, 4, 5]);
     let t: Vec<_> = vec.splice_slow(.., None);
-    assert!(vec[..]  == [][..]);
+    assert!(vec[..] == [][..]);
     assert!(t[..] == [1, 2, 3, 4, 5][..]);
 }
 
@@ -411,14 +408,8 @@ fn test_splice_unbounded() {
 //     assert_eq!(v, &[1, 2]);
 // }
 
-
+#[test]
+fn test_split_off() {}
 
 #[test]
-fn test_split_off() {
-
-}
-
-#[test]
-fn test_dedup() {
-    
-}
+fn test_dedup() {}

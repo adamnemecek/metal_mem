@@ -1,11 +1,7 @@
-
 #[macro_use]
 extern crate metalgear;
 
-use metalgear::{
-    GPUVec,
-    // round_up
-};
+use metalgear::GPUVec;
 
 //
 
@@ -26,7 +22,6 @@ use metalgear::{
 //     // }
 //     // println!("len {}", v.len());
 
-
 //     // let byte_capacity = self.byte_capacity();
 //     // let buffer1 = dev.new_buffer(
 //     //     64,
@@ -40,7 +35,7 @@ use metalgear::{
 // }
 
 struct TestStruct {
-    data: [u8; 16]
+    data: [u8; 16],
 }
 
 // fn main1()  {
@@ -62,7 +57,7 @@ fn main() {
     // let roundup = round_up(0, 4096);
     // println!("r: {}", roundup);
     // println!("{}", std::mem::size_of::<TestStruct>());
-    let v = gpuvec![1,2,3];
+    let v = gpuvec![1, 2, 3];
     println!("{:?}", v.ptr_hash());
     // println!("dsa");
 }

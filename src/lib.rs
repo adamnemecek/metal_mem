@@ -6,30 +6,22 @@
 #![feature(trusted_len)]
 #![feature(box_syntax)]
 
+mod alloc_ref;
 mod gpu_resource;
 mod gpu_var;
 mod gpu_vec;
 mod gpu_vec2;
 mod mem;
 mod raw_vec;
-mod alloc_ref;
 
 mod macros;
 
 pub use {
-    gpu_resource::*,
-    gpu_var::*,
-    gpu_vec::*,
-    gpu_vec2::*,
-    mem::*,
+    alloc_ref::*, gpu_resource::*, gpu_var::*, gpu_vec::*, gpu_vec2::*, macros::*, mem::*,
     raw_vec::*,
-    alloc_ref::*,
-    macros::*,
 };
 
 #[macro_use]
 extern crate lazy_static;
 
-mod prelude {
-
-}
+mod prelude {}

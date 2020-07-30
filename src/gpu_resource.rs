@@ -1,4 +1,3 @@
-
 pub trait GPUResource {
     type Device;
     fn device(&self) -> &Self::Device;

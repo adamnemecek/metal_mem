@@ -1,4 +1,1 @@
-
-pub struct GPUVec2 {
-    
-}
+pub struct GPUVec2 {}

@@ -1,4 +1,3 @@
-
 // use std::alloc::{
 //     MemoryBlock,
 //     AllocRef,
@@ -13,7 +12,6 @@
 // pub struct GPUAlloc {
 //     device: metal::Device,
 // }
-
 
 // unsafe impl AllocRef for GPUAlloc {
 //     fn alloc(

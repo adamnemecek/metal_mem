@@ -1,4 +1,3 @@
-
 ///
 /// This is needed since some structs need a different alignment
 /// e.g. fraguniform
@@ -42,8 +41,7 @@ pub fn round_up(x: usize, to: usize) -> usize {
     let m = x % to;
     if m == 0 {
         x
-    }
-    else {
+    } else {
         x - m + to
     }
 }
@@ -60,7 +58,7 @@ pub struct MemAlign<T> {
     pub byte_size: usize,
     pub capacity: usize,
     pub remainder: usize,
-    phantom: std::marker::PhantomData<T>
+    phantom: std::marker::PhantomData<T>,
 }
 
 impl<T> MemAlign<T> {
@@ -86,7 +84,7 @@ impl<T> MemAlign<T> {
             byte_size,
             capacity,
             remainder,
-            phantom: Default::default()
+            phantom: Default::default(),
         }
     }
 }
@@ -119,7 +117,7 @@ impl<'a, T> AsPtr<T> for metal::Buffer {
     }
 }
 
-impl<T> AsMutPtr<T> for metal::Buffer{
+impl<T> AsMutPtr<T> for metal::Buffer {
     fn as_mut_ptr(&self) -> *mut T {
         self.contents() as *mut T
     }

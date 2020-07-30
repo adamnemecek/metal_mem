@@ -1,4 +1,3 @@
-
 #[macro_export]
 macro_rules! gpuvec {
     () => (
@@ -15,14 +14,13 @@ macro_rules! gpuvec {
 
 #[macro_export]
 macro_rules! gpuvar {
-    () => (
+    () => {
         $crate::GPUVar::new()
-    );
+    };
     // ($elem:expr; $n:expr) => (
     //     $crate::GPUVar::with_value1($elem, $n)
     // );
-    ($elem:expr) => (
+    ($elem:expr) => {
         $crate::GPUVar::with_value1($elem)
-    );
+    };
 }
-

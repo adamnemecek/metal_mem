@@ -1,9 +1,4 @@
-
-
-use metalgear::{
-    round_up,
-    MemAlign
-};
+use metalgear::{round_up, MemAlign};
 
 #[test]
 fn test_roundup() {
@@ -18,10 +13,9 @@ fn test_roundup() {
 
 #[test]
 fn test_paged_alloc() {
-
     #[repr(C)]
     struct TestStruct {
-        data: [u8; 18]
+        data: [u8; 18],
     }
 
     let element_size: usize = std::mem::size_of::<TestStruct>();
@@ -33,5 +27,4 @@ fn test_paged_alloc() {
     // println!("{}", alloc.is_valid());
 
     // dbg!("{}", alloc);
-
 }

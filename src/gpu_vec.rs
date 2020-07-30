@@ -7,42 +7,36 @@
 ///     * fix push
 ///     * append
 ///
-
 use crate::{
+    AsMutPtr,
+    AsPtr,
+    BufferAllocator,
+    GPUResource,
     // round_up,
     MemAlign,
-    AsPtr,
-    AsMutPtr,
-    BufferAllocator,
-    GPUResource
 };
 
-use std::hash::{
-    Hash,
-    Hasher
-};
+use std::hash::{Hash, Hasher};
 
 use std::ops::{
+    Bound::{Excluded, Included, Unbounded},
     RangeBounds,
-    Bound::{Excluded, Included, Unbounded}
 };
 
-use std::iter::{TrustedLen, FusedIterator};
-use std::ptr::{NonNull};
+use std::iter::{FusedIterator, TrustedLen};
 use std::marker::PhantomData;
+use std::ptr::NonNull;
 
 // static mut DEVICE: metal::Device = metal::Device::system_default().unwrap();
 
 /// this is necessary because of send + sync
 pub struct Device {
-    device: metal::Device
+    device: metal::Device,
 }
 
 impl Device {
     pub fn new(device: metal::Device) -> Self {
-        Self {
-            device
-        }
+        Self { device }
     }
 }
 
@@ -52,8 +46,8 @@ impl Default for Device {
     }
 }
 
-unsafe impl Send for Device { }
-unsafe impl Sync for Device { }
+unsafe impl Send for Device {}
+unsafe impl Sync for Device {}
 
 lazy_static! {
     static ref DEVICE: Device = Device::default();
@@ -64,7 +58,7 @@ pub struct GPUVec<T: Copy> {
     inner: metal::Buffer,
     len: usize,
     mem_align: MemAlign<T>,
-    phantom: PhantomData<T>
+    phantom: PhantomData<T>,
 }
 
 impl<T: Copy> GPUResource for GPUVec<T> {
@@ -101,9 +95,7 @@ impl<T: Copy> GPUVec<T> {
 impl<T: Copy> GPUVec<T> {
     pub fn ptr_hash(&self) -> usize {
         let ptr = self.inner.contents();
-        unsafe {
-            std::mem::transmute(ptr)
-        }
+        unsafe { std::mem::transmute(ptr) }
     }
 }
 
@@ -123,14 +115,14 @@ impl<T: Copy> GPUVec<T> {
         let mem_align = MemAlign::<T>::new(capacity);
         let inner = device.new_mem(
             mem_align,
-            metal::MTLResourceOptions::CPUCacheModeDefaultCache
+            metal::MTLResourceOptions::CPUCacheModeDefaultCache,
         );
         Self {
             device: device.to_owned(),
             inner,
             len: 0,
             mem_align,
-            phantom: PhantomData
+            phantom: PhantomData,
         }
     }
 
@@ -145,11 +137,7 @@ impl<T: Copy> GPUVec<T> {
         let mut ret = Self::with_capacity(device, len);
 
         unsafe {
-            std::ptr::copy(
-                data.as_ptr(),
-                ret.as_mut_ptr(),
-                len
-            );
+            std::ptr::copy(data.as_ptr(), ret.as_mut_ptr(), len);
         }
 
         ret.len = len;
@@ -200,13 +188,16 @@ impl<T: Copy> GPUVec<T> {
             return;
         }
         let mem_align = MemAlign::<T>::new(capacity);
-        let inner = self.device.new_mem(mem_align, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let inner = self.device.new_mem(
+            mem_align,
+            metal::MTLResourceOptions::CPUCacheModeDefaultCache,
+        );
         unsafe {
             std::ptr::copy(
                 self.as_ptr(),
                 // inner.contents() as *mut T,
                 inner.as_mut_ptr(),
-                self.len()
+                self.len(),
             );
         }
         self.mem_align = mem_align;
@@ -215,7 +206,6 @@ impl<T: Copy> GPUVec<T> {
     }
 
     pub fn extend_from_slice(&mut self, other: &[T]) {
-
         let offset = self.len();
 
         let new_len = self.len() + other.len();
@@ -226,7 +216,7 @@ impl<T: Copy> GPUVec<T> {
             std::ptr::copy(
                 other.as_ptr(),
                 self.as_mut_ptr().offset(self.len() as _),
-                other.len()
+                other.len(),
             );
         }
         self.len = new_len;
@@ -462,7 +452,8 @@ impl<T: Copy> GPUVec<T> {
             self.set_len(start);
             // Use the borrow in the IterMut to indicate borrowing behavior of the
             // whole Drain iterator (like &mut T).
-            let range_slice = std::slice::from_raw_parts_mut(self.as_mut_ptr().add(start), end - start);
+            let range_slice =
+                std::slice::from_raw_parts_mut(self.as_mut_ptr().add(start), end - start);
             Drain {
                 tail_start: end,
                 tail_len: len - end,
@@ -561,17 +552,15 @@ impl<T: Copy> GPUVec<T> {
         let capacity = std::cmp::max(double_cap, required_cap);
 
         let mem_align = MemAlign::<T>::new(capacity);
-        let inner = self.device.new_mem(mem_align, metal::MTLResourceOptions::CPUCacheModeDefaultCache);
+        let inner = self.device.new_mem(
+            mem_align,
+            metal::MTLResourceOptions::CPUCacheModeDefaultCache,
+        );
         unsafe {
-            std::ptr::copy(
-                self.as_ptr(),
-                inner.as_mut_ptr(),
-                self.len()
-            );
+            std::ptr::copy(self.as_ptr(), inner.as_mut_ptr(), self.len());
         }
         self.inner = inner;
         self.mem_align = mem_align;
-
     }
 
     fn try_reserve(&mut self, used_capacity: usize, needed_extra_capacity: usize) {
@@ -624,7 +613,10 @@ struct SetLenOnDrop<'a> {
 impl<'a> SetLenOnDrop<'a> {
     #[inline]
     fn new(len: &'a mut usize) -> Self {
-        SetLenOnDrop { local_len: *len, len: len }
+        SetLenOnDrop {
+            local_len: *len,
+            len: len,
+        }
     }
 
     #[inline]
@@ -661,7 +653,7 @@ impl<T: PartialEq + Copy> GPUVec<T> {
     }
 }
 
-impl<T : Copy> GPUVec<T> {
+impl<T: Copy> GPUVec<T> {
     /// Removes the first instance of `item` from the vector if the item exists.
     ///
     /// # Examples
@@ -712,7 +704,6 @@ impl<T: Copy, I: std::slice::SliceIndex<[T]>> std::ops::Index<I> for GPUVec<T> {
 }
 
 impl<T: Copy, I: std::slice::SliceIndex<[T]>> std::ops::IndexMut<I> for GPUVec<T> {
-
     #[inline]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         std::ops::IndexMut::index_mut(&mut **self, index)
@@ -720,7 +711,7 @@ impl<T: Copy, I: std::slice::SliceIndex<[T]>> std::ops::IndexMut<I> for GPUVec<T
 }
 
 impl<T: Copy> Extend<T> for GPUVec<T> {
-    fn extend<I: IntoIterator<Item=T>>(&mut self, iter: I) {
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         let v: Vec<T> = iter.into_iter().collect();
         self.extend_from_slice(&v);
     }
@@ -743,28 +734,18 @@ impl<T: Copy> std::ops::Deref for GPUVec<T> {
 
     #[inline]
     fn deref(&self) -> &[T] {
-        unsafe {
-            std::slice::from_raw_parts(
-                self.as_ptr(),
-                self.len()
-            )
-        }
+        unsafe { std::slice::from_raw_parts(self.as_ptr(), self.len()) }
     }
 }
 
 impl<T: Copy> std::ops::DerefMut for GPUVec<T> {
     #[inline]
     fn deref_mut(&mut self) -> &mut [T] {
-        unsafe {
-            std::slice::from_raw_parts_mut(
-                self.as_mut_ptr(),
-                self.len()
-            )
-        }
+        unsafe { std::slice::from_raw_parts_mut(self.as_mut_ptr(), self.len()) }
     }
 }
 
-pub struct Drain<'a, T: Copy > {
+pub struct Drain<'a, T: Copy> {
     /// Index of tail to preserve
     tail_start: usize,
     /// Length of tail
@@ -813,7 +794,9 @@ impl<T: Copy> Iterator for Drain<'_, T> {
 
     #[inline]
     fn next(&mut self) -> Option<T> {
-        self.iter.next().map(|elt| unsafe { std::ptr::read(elt as *const _) })
+        self.iter
+            .next()
+            .map(|elt| unsafe { std::ptr::read(elt as *const _) })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -824,7 +807,9 @@ impl<T: Copy> Iterator for Drain<'_, T> {
 impl<T: Copy> DoubleEndedIterator for Drain<'_, T> {
     #[inline]
     fn next_back(&mut self) -> Option<T> {
-        self.iter.next_back().map(|elt| unsafe { std::ptr::read(elt as *const _) })
+        self.iter
+            .next_back()
+            .map(|elt| unsafe { std::ptr::read(elt as *const _) })
     }
 }
 
@@ -850,12 +835,18 @@ impl<T: Copy> Drop for Drain<'_, T> {
     }
 }
 
-pub struct Splice<'a, I: Iterator> where I::Item : Copy{
+pub struct Splice<'a, I: Iterator>
+where
+    I::Item: Copy,
+{
     drain: Drain<'a, I::Item>,
     replace_with: I,
 }
 
-impl<I: Iterator> Iterator for Splice<'_, I> where I::Item : Copy {
+impl<I: Iterator> Iterator for Splice<'_, I>
+where
+    I::Item: Copy,
+{
     type Item = I::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -867,13 +858,19 @@ impl<I: Iterator> Iterator for Splice<'_, I> where I::Item : Copy {
     }
 }
 
-impl<I: Iterator> DoubleEndedIterator for Splice<'_, I> where I::Item : Copy {
+impl<I: Iterator> DoubleEndedIterator for Splice<'_, I>
+where
+    I::Item: Copy,
+{
     fn next_back(&mut self) -> Option<Self::Item> {
         self.drain.next_back()
     }
 }
 
-impl<I: Iterator> Drop for Splice<'_, I> where I::Item : Copy {
+impl<I: Iterator> Drop for Splice<'_, I>
+where
+    I::Item: Copy,
+{
     fn drop(&mut self) {
         self.drain.by_ref().for_each(drop);
 
@@ -900,7 +897,11 @@ impl<I: Iterator> Drop for Splice<'_, I> where I::Item : Copy {
 
             // Collect any remaining elements.
             // This is a zero-length vector which does not allocate if `lower_bound` was exact.
-            let mut collected = self.replace_with.by_ref().collect::<Vec<I::Item>>().into_iter();
+            let mut collected = self
+                .replace_with
+                .by_ref()
+                .collect::<Vec<I::Item>>()
+                .into_iter();
             // Now we have an exact count.
             if collected.len() > 0 {
                 self.drain.move_tail(collected.len());
@@ -923,8 +924,10 @@ impl<T: Copy> Drain<'_, T> {
         let vec = self.vec.as_mut();
         let range_start = vec.len;
         let range_end = self.tail_start;
-        let range_slice =
-            std::slice::from_raw_parts_mut(vec.as_mut_ptr().add(range_start), range_end - range_start);
+        let range_slice = std::slice::from_raw_parts_mut(
+            vec.as_mut_ptr().add(range_start),
+            range_end - range_start,
+        );
 
         for place in range_slice {
             if let Some(new_item) = replace_with.next() {
@@ -1084,7 +1087,7 @@ impl<T: Copy + PartialEq> PartialEq for GPUVec<T> {
     }
 }
 
-impl<T: Copy + Eq> Eq for GPUVec<T> { }
+impl<T: Copy + Eq> Eq for GPUVec<T> {}
 
 impl<T: Hash + Copy> Hash for GPUVec<T> {
     #[inline]
@@ -1295,16 +1298,17 @@ impl<'a, T: Copy> IntoIterator for &'a mut GPUVec<T> {
     type Item = &'a mut T;
     type IntoIter = std::slice::IterMut<'a, T>;
 
-    fn into_iter(self) ->  Self::IntoIter {
+    fn into_iter(self) -> Self::IntoIter {
         self.as_mut_slice().iter_mut()
     }
 }
 
-unsafe impl<T: Copy> Send for GPUVec<T> { }
-unsafe impl<T: Copy> Sync for GPUVec<T> { }
+unsafe impl<T: Copy> Send for GPUVec<T> {}
+unsafe impl<T: Copy> Sync for GPUVec<T> {}
 
 impl<T: Copy> Drop for GPUVec<T> {
     fn drop(&mut self) {
-        self.inner.set_purgeable_state(metal::MTLPurgeableState::Empty);
+        self.inner
+            .set_purgeable_state(metal::MTLPurgeableState::Empty);
     }
 }
