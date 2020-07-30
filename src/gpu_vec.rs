@@ -79,13 +79,14 @@ impl<T: Copy> Default for GPUVec<T> {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct GPUBufferOptions {
-    opts: metal::MTLResourceOptions
+    pub(crate) inner: metal::MTLResourceOptions,
 }
 
 impl From<metal::MTLResourceOptions> for GPUBufferOptions {
-    fn from(opts: metal::MTLResourceOptions) -> Self {
-        Self { opts }
+    fn from(inner: metal::MTLResourceOptions) -> Self {
+        Self { inner }
     }
 }
 
@@ -127,11 +128,11 @@ impl<T: Copy> GPUVec<T> {
     //     todo!()
     // }
 
-    pub fn with_capacity(device: &metal::DeviceRef, capacity: usize) -> Self {
+    pub fn with_capacity_opts(device: &metal::DeviceRef, capacity: usize, opts: GPUBufferOptions) -> Self {
         let mem_align = MemAlign::<T>::new(capacity);
         let inner = device.new_mem(
             mem_align,
-            metal::MTLResourceOptions::CPUCacheModeDefaultCache,
+            opts.inner
         );
         Self {
             device: device.to_owned(),
@@ -142,15 +143,19 @@ impl<T: Copy> GPUVec<T> {
         }
     }
 
+    pub fn with_capacity(device: &metal::DeviceRef, capacity: usize) -> Self {
+        Self::with_capacity_opts(device, capacity, Default::default())
+    }
+
     pub fn from_elem(x: T) -> Self {
         let mut ret = Self::new();
         ret[0] = x;
         ret
     }
 
-    pub fn from_slice(device: &metal::DeviceRef, data: &[T]) -> Self {
+    pub fn from_slice_opts(device: &metal::DeviceRef, data: &[T], opts: GPUBufferOptions) -> Self {
         let len = data.len();
-        let mut ret = Self::with_capacity(device, len);
+        let mut ret = Self::with_capacity_opts(device, len, opts);
 
         unsafe {
             std::ptr::copy(data.as_ptr(), ret.as_mut_ptr(), len);
@@ -158,6 +163,10 @@ impl<T: Copy> GPUVec<T> {
 
         ret.len = len;
         ret
+    }
+
+    pub fn from_slice(device: &metal::DeviceRef, data: &[T]) -> Self {
+        Self::from_slice_opts(device, data, Default::default())
     }
 
     pub fn from_slice1(data: &[T]) -> Self {
