@@ -79,6 +79,22 @@ impl<T: Copy> Default for GPUVec<T> {
     }
 }
 
+pub struct GPUBufferOptions {
+    opts: metal::MTLResourceOptions
+}
+
+impl From<metal::MTLResourceOptions> for GPUBufferOptions {
+    fn from(opts: metal::MTLResourceOptions) -> Self {
+        Self { opts }
+    }
+}
+
+impl Default for GPUBufferOptions {
+    fn default() -> Self {
+        metal::MTLResourceOptions::CPUCacheModeDefaultCache.into()
+    }
+}
+
 ///
 /// from MTLBuffer
 ///
