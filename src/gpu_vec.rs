@@ -53,6 +53,23 @@ lazy_static! {
     static ref DEVICE: Device = Device::default();
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct GPUBufferOptions {
+    pub(crate) inner: metal::MTLResourceOptions,
+}
+
+impl From<metal::MTLResourceOptions> for GPUBufferOptions {
+    fn from(inner: metal::MTLResourceOptions) -> Self {
+        Self { inner }
+    }
+}
+
+impl Default for GPUBufferOptions {
+    fn default() -> Self {
+        metal::MTLResourceOptions::CPUCacheModeDefaultCache.into()
+    }
+}
+
 pub struct GPUVec<T: Copy> {
     device: metal::Device,
     inner: metal::Buffer,
@@ -76,23 +93,6 @@ impl<T: Copy> GPUResource for GPUVec<T> {
 impl<T: Copy> Default for GPUVec<T> {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct GPUBufferOptions {
-    pub(crate) inner: metal::MTLResourceOptions,
-}
-
-impl From<metal::MTLResourceOptions> for GPUBufferOptions {
-    fn from(inner: metal::MTLResourceOptions) -> Self {
-        Self { inner }
-    }
-}
-
-impl Default for GPUBufferOptions {
-    fn default() -> Self {
-        metal::MTLResourceOptions::CPUCacheModeDefaultCache.into()
     }
 }
 
