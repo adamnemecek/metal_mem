@@ -128,12 +128,13 @@ impl<T: Copy> GPUVec<T> {
     //     todo!()
     // }
 
-    pub fn with_capacity_opts(device: &metal::DeviceRef, capacity: usize, opts: GPUBufferOptions) -> Self {
+    pub fn with_capacity_opts(
+        device: &metal::DeviceRef,
+        capacity: usize,
+        opts: GPUBufferOptions,
+    ) -> Self {
         let mem_align = MemAlign::<T>::new(capacity);
-        let inner = device.new_mem(
-            mem_align,
-            opts.inner
-        );
+        let inner = device.new_mem(mem_align, opts.inner);
         Self {
             device: device.to_owned(),
             inner,
