@@ -23,10 +23,10 @@ use std::ops::{
     RangeBounds,
 };
 
+use cocoa_foundation::foundation::NSRange;
 use std::iter::{FusedIterator, TrustedLen};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use cocoa_foundation::foundation::NSRange;
 
 // static mut DEVICE: metal::Device = metal::Device::system_default().unwrap();
 
@@ -109,12 +109,17 @@ impl<T: Copy> GPUVec<T> {
         self.inner.set_label(label)
     }
 
+    pub fn add_debug_marker(&self, label: &str, range: std::ops::Range<u64>) {
+        let range = NSRange {
+            location: range.start,
+            length: range.end - range.start
+        };
+        self.inner.add_debug_marker(label, range)
+    }
 
-
-    // pub fn add_debug_marker(&self, label: &str, range: std::ops::Range<u64>) {
-        // let range = NSRange { location: range.start, length: range: range.}
-        // self.inner.add_debug_marker(label, range)
-    // }
+    pub fn remove_all_debug_markers(&self) {
+        self.inner.remove_all_debug_markers()
+    }
 }
 
 impl<T: Copy> GPUVec<T> {
