@@ -26,6 +26,7 @@ use std::ops::{
 use std::iter::{FusedIterator, TrustedLen};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
+use cocoa_foundation::foundation::NSRange;
 
 // static mut DEVICE: metal::Device = metal::Device::system_default().unwrap();
 
@@ -107,6 +108,13 @@ impl<T: Copy> GPUVec<T> {
     pub fn set_label(&self, label: &str) {
         self.inner.set_label(label)
     }
+
+
+
+    // pub fn add_debug_marker(&self, label: &str, range: std::ops::Range<u64>) {
+        // let range = NSRange { location: range.start, length: range: range.}
+        // self.inner.add_debug_marker(label, range)
+    // }
 }
 
 impl<T: Copy> GPUVec<T> {
@@ -1084,6 +1092,12 @@ impl<T: Copy> Clone for GPUVec<T> {
     // fn clone_from(&mut self, other: &Vec<T>) {
     //     other.as_slice().clone_into(self);
     // }
+}
+
+impl<T: std::fmt::Debug + Copy> std::fmt::Debug for GPUVec<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&**self, f)
+    }
 }
 
 impl<T: Copy> AsRef<metal::BufferRef> for GPUVec<T> {
