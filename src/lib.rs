@@ -6,20 +6,31 @@
 #![feature(trusted_len)]
 #![feature(box_syntax)]
 
-mod alloc_ref;
+// mod alloc_ref;
+// pub use alloc_ref::*;
+
+mod encoder;
+pub use encoder::*;
+
 mod gpu_resource;
+pub use gpu_resource::*;
+
 mod gpu_var;
+pub use gpu_var::*;
+
 mod gpu_vec;
-mod gpu_vec2;
+pub use gpu_vec::*;
+
+// mod gpu_vec2;
+// pub use gpu_vec2::*;
+
 mod mem;
-mod raw_vec;
+pub use mem::*;
+
+// mod raw_vec;
+// pub use raw_vec::*;
 
 mod macros;
-
-pub use {
-    alloc_ref::*, gpu_resource::*, gpu_var::*, gpu_vec::*, gpu_vec2::*, macros::*, mem::*,
-    raw_vec::*,
-};
 
 #[macro_use]
 extern crate lazy_static;
