@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate metalgear;
 // mod tests {
-use metalgear::GPUVar;
+use metalgear::prelude::GPUVar;
 
 #[test]
 fn test_var_mac() {
