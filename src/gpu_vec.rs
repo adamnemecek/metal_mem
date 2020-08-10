@@ -27,32 +27,10 @@ use cocoa_foundation::foundation::NSRange;
 use std::iter::{FusedIterator, TrustedLen};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
+use crate::get_global_device;
 
 // static mut DEVICE: metal::Device = metal::Device::system_default().unwrap();
 
-/// this is necessary because of send + sync
-pub struct Device {
-    device: metal::Device,
-}
-
-impl Device {
-    pub fn new(device: metal::Device) -> Self {
-        Self { device }
-    }
-}
-
-impl Default for Device {
-    fn default() -> Self {
-        Self::new(metal::Device::system_default().unwrap())
-    }
-}
-
-unsafe impl Send for Device {}
-unsafe impl Sync for Device {}
-
-lazy_static! {
-    static ref DEVICE: Device = Device::default();
-}
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct GPUBufferOptions {
@@ -93,7 +71,7 @@ impl<T: Copy> GPUResource for GPUVec<T> {
 
 impl<T: Copy> Default for GPUVec<T> {
     fn default() -> Self {
-        Self::new()
+        Self::new_with_device(&get_global_device())
     }
 }
 
@@ -131,15 +109,14 @@ impl<T: Copy> GPUVec<T> {
 
 /// From Rust vec
 impl<T: Copy> GPUVec<T> {
-    pub fn new() -> Self {
-        // let device = Device::default().device;
-        let device = metal::Device::system_default().unwrap();
-        Self::with_capacity(&device, 1)
+    pub fn new_with_device(device: &metal::DeviceRef) -> Self {
+        Self::with_capacity(device, 1)
     }
 
-    // pub fn set_device(device: Device) {
-    //     todo!()
-    // }
+    pub fn new() -> Self {
+        // let device = Device::default().device;
+        Self::with_capacity(&get_global_device(), 1)
+    }
 
     pub fn with_capacity_opts(
         device: &metal::DeviceRef,

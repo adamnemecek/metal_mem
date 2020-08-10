@@ -12,6 +12,9 @@
 mod encoder;
 pub use encoder::*;
 
+mod global;
+pub use global::*;
+
 mod gpu_resource;
 pub use gpu_resource::*;
 
@@ -32,7 +35,7 @@ pub use mem::*;
 
 mod macros;
 
-#[macro_use]
-extern crate lazy_static;
+// #[macro_use]
+// extern crate lazy_static;
 
 mod prelude {}
