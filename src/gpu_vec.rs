@@ -223,7 +223,7 @@ impl<T: Copy> GPUVec<T> {
     }
 
     pub fn extend_from_slice(&mut self, other: &[T]) {
-        let offset = self.len();
+        // let offset = self.len();
 
         let new_len = self.len() + other.len();
 
