@@ -63,7 +63,9 @@ impl<T: Copy> GPUResource for GPUVec<T> {
     }
 
     fn set_device(&mut self, device: &Self::Device) {
-        self.device = device.to_owned();
+        let mut self_ = Self::with_capacity(device, self.capacity());
+        self_.extend_from_slice(&self);
+        *self = self_;
         todo!("we need to realloc in the new device");
     }
 }
