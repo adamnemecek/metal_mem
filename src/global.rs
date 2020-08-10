@@ -31,8 +31,7 @@ pub fn get_global_device() -> metal::Device {
     unsafe {
         if let Some(d) = &DEVICE1 {
             d.device.to_owned()
-        }
-        else {
+        } else {
             metal::Device::system_default().unwrap()
         }
     }
@@ -40,6 +39,8 @@ pub fn get_global_device() -> metal::Device {
 
 pub fn set_global_device(device: &metal::DeviceRef) {
     unsafe {
-        DEVICE1 = Some(Device { device: device.to_owned() });
+        DEVICE1 = Some(Device {
+            device: device.to_owned(),
+        });
     }
 }

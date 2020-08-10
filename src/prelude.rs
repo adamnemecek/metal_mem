@@ -1,4 +1,1 @@
-pub use crate::{
-    GPUVec, GPUVar, RenderCommandEncoderExt,
-    get_global_device, set_global_device
-};
+pub use crate::{get_global_device, set_global_device, GPUVar, GPUVec, RenderCommandEncoderExt};
