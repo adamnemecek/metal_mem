@@ -8,6 +8,13 @@ pub struct GPUVar<T: Copy> {
 }
 
 impl<T: Copy> GPUVar<T> {
+    #[inline]
+    pub(crate) fn inner(&self) -> &metal::BufferRef {
+        &self.inner
+    }
+}
+
+impl<T: Copy> GPUVar<T> {
     pub fn with_value(device: &metal::DeviceRef, value: T) -> Self {
         let mem_align = MemAlign::<T>::new(1);
         let inner = device.new_mem(
