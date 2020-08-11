@@ -70,12 +70,12 @@ impl<T: Copy> GPUResource for GPUVec<T> {
     }
 }
 
-impl<T: Copy> GPUVec<T> {
-    #[inline]
-    pub(crate) fn inner(&self) -> &metal::BufferRef {
-        &self.inner
-    }
-}
+// impl<T: Copy> GPUVec<T> {
+//     #[inline]
+//     pub(crate) fn inner(&self) -> &metal::BufferRef {
+//         &self.inner
+//     }
+// }
 
 impl<T: Copy> Default for GPUVec<T> {
     fn default() -> Self {
@@ -1157,6 +1157,7 @@ impl<T: Copy + Ord> Ord for GPUVec<T> {
 //     idx: usize
 // }
 
+#[allow(dead_code)]
 pub struct IntoIter<T: Copy> {
     buf: NonNull<T>,
     phantom: PhantomData<T>,

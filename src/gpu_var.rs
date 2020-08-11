@@ -1,4 +1,5 @@
 use crate::{BufferAllocator, MemAlign};
+use cocoa_foundation::foundation::NSRange;
 
 pub struct GPUVar<T: Copy> {
     device: metal::Device,
@@ -7,10 +8,32 @@ pub struct GPUVar<T: Copy> {
     phantom: std::marker::PhantomData<T>,
 }
 
+// impl<T: Copy> GPUVar<T> {
+//     #[inline]
+//     pub(crate) fn inner(&self) -> &metal::BufferRef {
+//         &self.inner
+//     }
+// }
+
 impl<T: Copy> GPUVar<T> {
-    #[inline]
-    pub(crate) fn inner(&self) -> &metal::BufferRef {
-        &self.inner
+    pub fn label(&self) -> &str {
+        self.inner.label()
+    }
+
+    pub fn set_label(&self, label: &str) {
+        self.inner.set_label(label)
+    }
+
+    pub fn add_debug_marker(&self, label: &str, range: std::ops::Range<u64>) {
+        let range = NSRange {
+            location: range.start,
+            length: range.end - range.start,
+        };
+        self.inner.add_debug_marker(label, range)
+    }
+
+    pub fn remove_all_debug_markers(&self) {
+        self.inner.remove_all_debug_markers()
     }
 }
 

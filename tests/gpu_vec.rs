@@ -400,6 +400,15 @@ fn test_splice_unbounded() {
     assert!(t[..] == [1, 2, 3, 4, 5][..]);
 }
 
+#[test]
+fn test_label() {
+    let dev = metal::Device::system_default().unwrap();
+    let vec = GPUVec::from_slice(&dev, &[1, 2, 3, 4, 5]);
+    let label = "test_label";
+    vec.set_label(&label);
+    assert!(vec.label() == label);
+}
+
 // #[test]
 // fn test_splice_forget() {
 //     let mut v = vec![1, 2, 3, 4, 5];
