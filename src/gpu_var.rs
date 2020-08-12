@@ -146,3 +146,9 @@ impl<T: Copy> std::ops::DerefMut for GPUVar<T> {
 
 unsafe impl<T: Copy> Send for GPUVar<T> {}
 unsafe impl<T: Copy> Sync for GPUVar<T> {}
+
+impl<T: std::fmt::Debug + Copy> std::fmt::Debug for GPUVar<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&**self, f)
+    }
+}
