@@ -113,6 +113,7 @@ impl<T: Copy> GPUVec<T> {
         let ptr = self.inner.contents();
         unsafe { std::mem::transmute(ptr) }
     }
+
 }
 
 /// From Rust vec

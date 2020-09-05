@@ -11,11 +11,13 @@ pub trait RenderCommandEncoderExt {
 }
 
 impl RenderCommandEncoderExt for metal::RenderCommandEncoderRef {
+    #[inline]
     fn set_vertex_value<T>(&self, index: NSUInteger, value: &T) {
         let ptr = value as *const T;
         self.set_vertex_bytes(index, std::mem::size_of::<T>() as u64, ptr as *const _)
     }
 
+    #[inline]
     fn set_fragment_value<T>(&self, index: NSUInteger, value: &T) {
         let ptr = value as *const T;
         self.set_fragment_bytes(index, std::mem::size_of::<T>() as u64, ptr as *const _)
@@ -35,8 +37,42 @@ pub trait ComputeCommandEncoderExt {
 }
 
 impl ComputeCommandEncoderExt for metal::ComputeCommandEncoderRef {
+    #[inline]
     fn set_value<T>(&self, index: NSUInteger, value: &T) {
         let ptr = value as *const T;
         self.set_bytes(index, std::mem::size_of::<T>() as u64, ptr as *const _)
+    }
+}
+
+
+pub trait BlitCommandEncoderExt {
+    fn blit(
+        &self,
+        source_texture: &metal::TextureRef,
+        destination_texture: &metal::TextureRef,
+        destination_origin: metal::MTLOrigin,
+    );
+}
+
+impl BlitCommandEncoderExt for metal::BlitCommandEncoderRef {
+    fn blit(
+        &self,
+        source_texture: &metal::TextureRef,
+        destination_texture: &metal::TextureRef,
+        destination_origin: metal::MTLOrigin,
+    ) {
+        let zero = metal::MTLOrigin::default();
+        let source_size = source.texture.size();
+        self.copy_from_texture(
+            source_texture,
+            0,
+            0,
+            zero,
+            source_size,
+            destination_texture,
+            0,
+            0,
+            destination_origin,
+        );
     }
 }
