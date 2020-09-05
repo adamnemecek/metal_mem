@@ -114,6 +114,15 @@ impl<T: Copy> GPUVec<T> {
         unsafe { std::mem::transmute(ptr) }
     }
 
+    pub fn to_owned(&self) -> Self {
+        Self {
+            device: self.device.to_owned(),
+            inner: self.inner.to_owned(),
+            len: self.len,
+            mem_align: self.mem_align,
+            phantom: self.phantom,
+        }
+    }
 }
 
 /// From Rust vec

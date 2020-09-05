@@ -45,34 +45,34 @@ impl ComputeCommandEncoderExt for metal::ComputeCommandEncoderRef {
 }
 
 
-pub trait BlitCommandEncoderExt {
-    fn blit(
-        &self,
-        source_texture: &metal::TextureRef,
-        destination_texture: &metal::TextureRef,
-        destination_origin: metal::MTLOrigin,
-    );
-}
+// pub trait BlitCommandEncoderExt {
+//     fn blit(
+//         &self,
+//         source_texture: &metal::TextureRef,
+//         destination_texture: &metal::TextureRef,
+//         destination_origin: metal::MTLOrigin,
+//     );
+// }
 
-impl BlitCommandEncoderExt for metal::BlitCommandEncoderRef {
-    fn blit(
-        &self,
-        source_texture: &metal::TextureRef,
-        destination_texture: &metal::TextureRef,
-        destination_origin: metal::MTLOrigin,
-    ) {
-        let zero = metal::MTLOrigin::default();
-        let source_size = source.texture.size();
-        self.copy_from_texture(
-            source_texture,
-            0,
-            0,
-            zero,
-            source_size,
-            destination_texture,
-            0,
-            0,
-            destination_origin,
-        );
-    }
-}
+// impl BlitCommandEncoderExt for metal::BlitCommandEncoderRef {
+//     fn blit(
+//         &self,
+//         source_texture: &metal::TextureRef,
+//         destination_texture: &metal::TextureRef,
+//         destination_origin: metal::MTLOrigin,
+//     ) {
+//         let zero = metal::MTLOrigin::default();
+//         let source_size = source_texture.size();
+//         self.copy_from_texture(
+//             source_texture,
+//             0,
+//             0,
+//             zero,
+//             source_size,
+//             destination_texture,
+//             0,
+//             0,
+//             destination_origin,
+//         );
+//     }
+// }
