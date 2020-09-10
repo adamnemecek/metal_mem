@@ -2,6 +2,7 @@
 * [ ] refine macros
     * why is gpuvec (and vec) using box?
 * [ ] prelude
+* [ ] remove calls to .contents()
 
 * [x] byte_capacity and capacity are mixed up because when we allocate whole pages but only uses a subset of these
 * [ ] fix splice_slow

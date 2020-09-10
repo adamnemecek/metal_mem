@@ -89,6 +89,14 @@ impl<T: Copy> GPUVar<T> {
         self.inner.contents() as *mut T
     }
 
+    pub fn to_owned(&self) -> Self {
+        Self {
+            device: self.device.to_owned(),
+            inner: self.inner.to_owned(),
+            phantom: self.phantom,
+        }
+    }
+
     // #[inline]
     // pub fn value(&self) -> T {
     //     unsafe {

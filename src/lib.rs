@@ -39,3 +39,7 @@ mod macros;
 // extern crate lazy_static;
 
 pub mod prelude;
+
+
+mod texture;
+pub use texture::*;

@@ -409,6 +409,14 @@ fn test_label() {
     assert!(vec.label() == label);
 }
 
+#[test]
+fn test_to_owned() {
+    let dev = metal::Device::system_default().unwrap();
+    let vec = GPUVec::from_slice(&dev, &[1, 2, 3, 4, 5]);
+    let vec2 = vec.to_owned();
+    assert!(vec.ptr_hash() == vec2.ptr_hash());
+}
+
 // #[test]
 // fn test_splice_forget() {
 //     let mut v = vec![1, 2, 3, 4, 5];
