@@ -24,7 +24,6 @@ use std::ops::{
 };
 
 use crate::get_global_device;
-use cocoa_foundation::foundation::NSRange;
 use std::iter::{FusedIterator, TrustedLen};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
@@ -96,7 +95,7 @@ impl<T: Copy> GPUVec<T> {
     }
 
     pub fn add_debug_marker(&self, label: &str, range: std::ops::Range<u64>) {
-        let range = NSRange {
+        let range = metal::NSRange {
             location: range.start,
             length: range.end - range.start,
         };

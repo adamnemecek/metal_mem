@@ -44,7 +44,6 @@ impl ComputeCommandEncoderExt for metal::ComputeCommandEncoderRef {
     }
 }
 
-
 // pub trait BlitCommandEncoderExt {
 //     fn blit(
 //         &self,

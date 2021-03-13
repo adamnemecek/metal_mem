@@ -40,6 +40,5 @@ mod macros;
 
 pub mod prelude;
 
-
 mod texture;
 pub use texture::*;

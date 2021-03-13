@@ -1,4 +1,3 @@
-
 // pub trait TextureExt {
 //     fn size(&self) -> metal::MTLSize;
 // }

@@ -7,6 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-metal = { git = "https://github.com/gfx-rs/metal-rs/", rev = "c3e2973" }
+metal = { git = "https://github.com/gfx-rs/metal-rs/", rev = "439c986" }
 #lazy_static = "*"
 cocoa-foundation = "0.1"
